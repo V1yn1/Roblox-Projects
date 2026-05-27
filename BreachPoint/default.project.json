@@ -2,70 +2,30 @@
   "name": "BreachPoint",
   "tree": {
     "$className": "DataModel",
-
     "ReplicatedStorage": {
       "Shared": {
         "$path": "src/shared"
+      },
+      "LobbyShared": {
+        "$path": "src/lobbySystem/lobbyShared"
       }
     },
-
     "ServerScriptService": {
       "Server": {
         "$path": "src/server"
+      },
+      "LobbyServer": {
+        "$path": "src/lobbySystem/lobbyServer"
       }
     },
-
     "StarterPlayer": {
       "StarterPlayerScripts": {
-        "Client": {
+        "client": {
           "$path": "src/client"
+        },
+        "LobbyClient": {
+          "$path": "src/lobbySystem/lobbyClient"
         }
-      }
-    },
-
-    "Workspace": {
-      "$properties": {
-        "FilteringEnabled": true
-      },
-      "Baseplate": {
-        "$className": "Part",
-        "$properties": {
-          "Anchored": true,
-          "Color": [
-            0.38823,
-            0.37254,
-            0.38823
-          ],
-          "Locked": true,
-          "Position": [
-            0,
-            -10,
-            0
-          ],
-          "Size": [
-            512,
-            20,
-            512
-          ]
-        }
-      }
-    },
-    "Lighting": {
-      "$properties": {
-        "Ambient": [
-          0,
-          0,
-          0
-        ],
-        "Brightness": 2,
-        "GlobalShadows": true,
-        "Outlines": false,
-        "Technology": "Voxel"
-      }
-    },
-    "SoundService": {
-      "$properties": {
-        "RespectFilteringEnabled": true
       }
     }
   }
