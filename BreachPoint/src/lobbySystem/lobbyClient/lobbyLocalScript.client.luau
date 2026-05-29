@@ -1,4 +1,5 @@
 local player = game.Players.LocalPlayer
+local updateUi = game.ReplicatedStorage:WaitForChild("LobbyEvents"):WaitForChild("UpdateUI")
 
 local menuGui = player.PlayerGui:WaitForChild("Menu")
 local menuButtons = menuGui:WaitForChild("MainMenu"):WaitForChild("MenuButtons")
@@ -28,8 +29,29 @@ end)
 
 -- lobbygui configuration
 local function loadLobbies()
-    
+    local lobbies = updateUi:Invoke()
+    for i,v in pairs(lobbies) do 
+        local newLobby
+        if lobbyList:FindFirstChild(i) then
+            newLobby = lobbyList:FindFirstChild(i)
+        else
+           newLobby = exampleButton:Clone()
+        end
+        newLobby.Name = i
+        newLobby.MapName.Text = v.map.name
+        newLobby["MapPhoto ImageLabel"].Image = v.map.imageId
+        newLobby.PlayerAmount.Text = #v.players
+        newLobby.Parent = lobbyList
+        newLobby.Visible = true
+    end
+
 end
+
+lobbyGui:GetPropertyChangedSignal("Enabled"):Connect(function()
+    if lobbyGui.Enabled then
+        loadLobbies()
+    end
+end)
 
 returnButton.MouseButton1Click:Connect(function()
     lobbyFrame:TweenPosition(UDim2.new(0.5, 0, -0.5, 0), "In", "Quad", 0.5, true, function()
