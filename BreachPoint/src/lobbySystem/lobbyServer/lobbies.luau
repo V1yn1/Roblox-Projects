@@ -1,4 +1,4 @@
-local lobbies  = {} 
+local lobbies  = {}
     local maps = require(game.ReplicatedStorage.LobbyShared.maps)
 
     function lobbies.addlobby(hostId, map)
@@ -8,7 +8,7 @@ local lobbies  = {}
         if not maps[map] then
             return
         end
-        
+
         local lobbySetup  = {
             hostId = hostId,
             map = map,

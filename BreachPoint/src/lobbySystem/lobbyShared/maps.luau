@@ -4,4 +4,6 @@ local maps = {
         imageId = "",
         placeId = ""
     }
-}   
+}
+
+return maps
