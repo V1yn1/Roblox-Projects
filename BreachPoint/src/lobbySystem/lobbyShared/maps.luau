@@ -1,7 +1,7 @@
 local maps = {
     RiverSide = {
         name= "RiverSide",
-        imageId = "",
+        imageId = "rbxassetid://121606006760076",
         placeId = ""
     }
 }

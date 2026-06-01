@@ -1,7 +1,11 @@
 local player = game.Players.LocalPlayer
 local updateUi = game.ReplicatedStorage:WaitForChild("LobbyEvents"):WaitForChild("UpdateUI")
+local createLobbyEvent = game.ReplicatedStorage:WaitForChild("LobbyEvents"):WaitForChild("CreateLobby")
+local joinLobbyEvent = game.ReplicatedStorage:WaitForChild("LobbyEvents"):WaitForChild("JoinLobby")
+local loadLobbiesEvent = game.ReplicatedStorage:WaitForChild("LobbyEvents"):WaitForChild("LoadLobbies")
+local idCache = require(game.ReplicatedStorage.LobbyShared:WaitForChild("idcache"))
 local maps = require(game.ReplicatedStorage.LobbyShared:WaitForChild("maps"))
-local selectedMap,playerCount = nil,2
+local selectedMap,playerCount,currentLobby = nil,2,nil
 
 local menuGui = player.PlayerGui:WaitForChild("Menu")
 local menuButtons = menuGui:WaitForChild("MainMenu"):WaitForChild("MenuButtons")
@@ -26,6 +30,19 @@ local mapDropdown = createLobbyUi:WaitForChild("DropDown ScrollingFrame")
 local mapDropdownExample = mapDropdown:WaitForChild("MapExample TextButton")
 local createLobbyButton = createLobbyUi:WaitForChild("Create TextButton")
 
+local lobbyDetailsFrame = lobbyGui:WaitForChild("LobbyDetails")
+local returnButtonDetails = lobbyDetailsFrame:WaitForChild("Return TextButton")
+local confirmationFrame = lobbyDetailsFrame:WaitForChild("LeaveLobbyConfirm")
+local cancelLeaveButton = confirmationFrame:WaitForChild("CancelLeave TextButton")
+local confirmLeaveButton = confirmationFrame:WaitForChild("ConfirmLeave TextButton")
+local startMatchButton = lobbyDetailsFrame:WaitForChild("StartMatch TextButton")
+local lobbySummary = lobbyDetailsFrame:WaitForChild("LobbySummary")
+local playerList = lobbyDetailsFrame:WaitForChild("PlayersList ScrollingFrame")
+local guardsTeam = playerList:WaitForChild("GuardsTeam")
+local intrudersTeam = playerList:WaitForChild("IntrudersTeam")
+local spectatorsTeam = playerList:WaitForChild("SpectatorsTeam")
+local statusPill = lobbyDetailsFrame:WaitForChild("Status Pill")
+
 -- menu configuration
 
 if not menuGui.Enabled then
@@ -41,10 +58,35 @@ end)
 
 
 -- lobbygui configuration
+local function getPlayerNameFromId(playerId)
+    local cachedName = idCache[playerId]
+    if cachedName then
+        return cachedName
+    end
+
+    for _,plr in pairs(game.Players:GetChildren()) do
+        if plr.UserId == playerId then
+            idCache[playerId] = plr.Name
+            return plr.Name
+        end
+    end
+    return nil
+end
+
 local function loadLobbies()
     local lobbies = updateUi:InvokeServer()
+    for _,child in pairs(lobbyList:GetChildren()) do
+        if child:IsA("Frame") then
+            child.Visible = false
+        end
+    end
     for i,v in pairs(lobbies) do
         local newLobby
+        local host = getPlayerNameFromId(v.hostId)
+        if not host then
+            return warn("Host not found for lobby: "..i)
+        end
+
         if lobbyList:FindFirstChild(i) then
             newLobby = lobbyList:FindFirstChild(i)
         else
@@ -53,12 +95,25 @@ local function loadLobbies()
         newLobby.Name = i
         newLobby.MapName.Text = v.map.name
         newLobby["MapPhoto ImageLabel"].Image = v.map.imageId
-        newLobby.PlayerAmount.Text = #v.players
+        newLobby.PlayerAmount.Text = #v.players.."/"..v.maxPlayers
+        newLobby.HostName.Text = "Host: "..host
         newLobby.Parent = lobbyList
         newLobby.Visible = true
+        if v.hostId == player.UserId then
+            newLobby["Join TextButton"].Visible = false
+        end
+        newLobby["Join TextButton"].MouseButton1Click:Connect(function()
+            joinLobbyEvent:FireServer(v.hostId)
+            currentLobby = i
+            newLobby["Join TextButton"].Visible = false
+        end)
     end
 
 end
+
+loadLobbiesEvent.OnClientEvent:Connect(function()
+    loadLobbies()
+end)
 
 lobbyGui:GetPropertyChangedSignal("Enabled"):Connect(function()
     if lobbyGui.Enabled then
@@ -87,7 +142,7 @@ local function loadDropDownMaps()
             newMap["MapPhoto ImageLabel"].Image = v.imageId
             newMap.Parent = mapDropdown
             newMap.Visible = true
-            
+
             newMap.MouseButton1Click:Connect(function()
                 selectedMapText.Text = "Selected Map: " .. v.name
                 selectedMap = i
@@ -113,4 +168,85 @@ minusButton.MouseButton1Click:Connect(function()
         playerCount -= 2
         playersCount.Text = playerCount
     end
+end)
+
+local function createLobby()
+     createLobbyUi.Visible = false
+     createLobbyEvent:FireServer(selectedMap,playerCount)
+end
+
+local function loadLobbyDetails(lobbyId)
+    local lobbies = updateUi:InvokeServer()
+    local lobby = lobbies[lobbyId]
+    print(lobbies)
+    if lobby then
+        if lobby.hostId == player.UserId then
+            startMatchButton.Visible = true
+        else
+            startMatchButton.Visible = false
+        end
+
+        local host = getPlayerNameFromId(lobby.hostId)
+        currentLobby = lobbyId
+        lobbySummary["MapPhoto ImageLabel"].Image = lobby.map.imageId
+        lobbySummary.LobbyName.Text = lobby.map.name.." - "..host
+        lobbySummary.HostName.Text = host
+        lobbySummary.PlayerCount.Text = #lobby.players.."/"..lobby.maxPlayers
+        statusPill.StatusText.Text = "Waiting"
+        for i,ids in pairs(lobby.spectators) do
+            local plrName = getPlayerNameFromId(ids)
+            if not spectatorsTeam:FindFirstChild(plrName) then
+                if plrName and ids ~= lobby.hostId then
+                    local newPlr = intrudersTeam.PlayerExample:Clone()
+                    newPlr.Name = plrName
+                    newPlr.PlayerName.Text = plrName
+                    newPlr.Parent = spectatorsTeam
+                    newPlr.Visible = true
+                elseif plrName and ids == lobby.hostId then
+                    local newPlr = guardsTeam.Host:Clone()
+                    newPlr.Name = host
+                    newPlr.PlayerName.Text = host
+                    newPlr.Parent = spectatorsTeam
+                    newPlr.Visible = true
+                end
+            end
+        end
+        lobbyDetailsFrame.Visible = true
+    end
+end
+local function leaveLobby()
+
+end
+createLobbyButton.MouseButton1Click:Connect(function()
+    if selectedMap then
+        print("Creating lobby with map: " .. selectedMap .. " and player count: " .. playerCount)
+        createLobbyUi.Visible = false
+        createLobby()
+        selectedMap,playerCount = nil,2
+        selectedMapText.Text = "Selected Map:"
+        task.wait(.5)
+        loadLobbyDetails(tostring(player.UserId))
+
+    else
+        print("Please select a map before creating a lobby.")
+    end
+end)
+
+joinLobbyEvent.OnClientEvent:Connect(function(hostId)
+    task.wait(.5)
+    loadLobbyDetails(tostring(hostId))
+end)
+
+returnButtonDetails.MouseButton1Click:Connect(function()
+    confirmationFrame.Visible = true
+end)
+
+cancelLeaveButton.MouseButton1Click:Connect(function()
+    confirmationFrame.Visible = false
+end)
+
+confirmLeaveButton.MouseButton1Click:Connect(function()
+    confirmationFrame.Visible = false
+    lobbyDetailsFrame.Visible = false
+    leaveLobby()
 end)
