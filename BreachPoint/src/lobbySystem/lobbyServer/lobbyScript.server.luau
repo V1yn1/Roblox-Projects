@@ -42,6 +42,6 @@ leaveLobbyEvent.OnServerEvent:Connect(function(player, hostId)
         lobbies.leaveLobby(player.UserId, hostId)
         task.wait(.5)
         loadLobbiesEvent:FireAllClients()
-        leaveLobbyEvent:FireAllClients(hostId)
+        leaveLobbyEvent:FireAllClients(hostId,player)
     end
 end)

@@ -3,7 +3,9 @@ local updateUi = game.ReplicatedStorage:WaitForChild("LobbyEvents"):WaitForChild
 local createLobbyEvent = game.ReplicatedStorage:WaitForChild("LobbyEvents"):WaitForChild("CreateLobby")
 local joinLobbyEvent = game.ReplicatedStorage:WaitForChild("LobbyEvents"):WaitForChild("JoinLobby")
 local loadLobbiesEvent = game.ReplicatedStorage:WaitForChild("LobbyEvents"):WaitForChild("LoadLobbies")
+local leaveLobbyEvent = game.ReplicatedStorage:WaitForChild("LobbyEvents"):WaitForChild("LeaveLobby")
 local idCache = require(game.ReplicatedStorage.LobbyShared:WaitForChild("idcache"))
+local photosCache = require(game.ReplicatedStorage.LobbyShared:WaitForChild("photoscache"))
 local maps = require(game.ReplicatedStorage.LobbyShared:WaitForChild("maps"))
 local selectedMap,playerCount,currentLobby = nil,2,nil
 
@@ -186,7 +188,7 @@ local function loadLobbyDetails(lobbyId)
             startMatchButton.Visible = false
         end
 
-        local host = getPlayerNameFromId(lobby.hostId)
+        local host,newPlr = getPlayerNameFromId(lobby.hostId),nil
         currentLobby = lobbyId
         lobbySummary["MapPhoto ImageLabel"].Image = lobby.map.imageId
         lobbySummary.LobbyName.Text = lobby.map.name.." - "..host
@@ -197,16 +199,58 @@ local function loadLobbyDetails(lobbyId)
             local plrName = getPlayerNameFromId(ids)
             if not spectatorsTeam:FindFirstChild(plrName) then
                 if plrName and ids ~= lobby.hostId then
-                    local newPlr = intrudersTeam.PlayerExample:Clone()
+                    newPlr = intrudersTeam.PlayerExample:Clone()
                     newPlr.Name = plrName
                     newPlr.PlayerName.Text = plrName
                     newPlr.Parent = spectatorsTeam
+                    newPlr["Avatar Photo"].Image = photosCache.getPlayerPhoto(ids)
                     newPlr.Visible = true
                 elseif plrName and ids == lobby.hostId then
-                    local newPlr = guardsTeam.Host:Clone()
+                    newPlr = guardsTeam.Host:Clone()
                     newPlr.Name = host
                     newPlr.PlayerName.Text = host
                     newPlr.Parent = spectatorsTeam
+                    newPlr["Avatar Photo"].Image = photosCache.getPlayerPhoto(ids)
+                    newPlr.Visible = true
+                end
+            end
+        end
+        for i,ids in pairs(lobby.intruders) do
+            local plrName = getPlayerNameFromId(ids)
+            if not intrudersTeam:FindFirstChild(plrName) then
+                if plrName and ids ~= lobby.hostId then
+                    newPlr = intrudersTeam.PlayerExample:Clone()
+                    newPlr.Name = plrName
+                    newPlr.PlayerName.Text = plrName
+                    newPlr.Parent = intrudersTeam
+                    newPlr["Avatar Photo"].Image = photosCache.getPlayerPhoto(ids)
+                    newPlr.Visible = true
+                elseif plrName and ids == lobby.hostId then
+                    newPlr = guardsTeam.Host:Clone()
+                    newPlr.Name = host
+                    newPlr.PlayerName.Text = host
+                    newPlr.Parent = intrudersTeam
+                    newPlr["Avatar Photo"].Image = photosCache.getPlayerPhoto(ids)
+                    newPlr.Visible = true
+                end
+            end
+        end
+        for i,ids in pairs(lobby.guards) do
+            local plrName = getPlayerNameFromId(ids)
+            if not guardsTeam:FindFirstChild(plrName) then
+                if plrName and ids ~= lobby.hostId then
+                    newPlr = guardsTeam.PlayerExample:Clone()
+                    newPlr.Name = plrName
+                    newPlr.PlayerName.Text = plrName
+                    newPlr.Parent = guardsTeam
+                    newPlr["Avatar Photo"].Image = photosCache.getPlayerPhoto(ids)
+                    newPlr.Visible = true
+                elseif plrName and ids == lobby.hostId then
+                    newPlr = guardsTeam.Host:Clone()
+                    newPlr.Name = host
+                    newPlr.PlayerName.Text = host
+                    newPlr.Parent = guardsTeam
+                    newPlr["Avatar Photo"].Image = photosCache.getPlayerPhoto(ids)
                     newPlr.Visible = true
                 end
             end
@@ -215,7 +259,9 @@ local function loadLobbyDetails(lobbyId)
     end
 end
 local function leaveLobby()
-
+    leaveLobbyEvent:FireServer(currentLobby)
+    confirmationFrame.Visible = false
+    lobbyDetailsFrame.Visible = false
 end
 createLobbyButton.MouseButton1Click:Connect(function()
     if selectedMap then
@@ -246,7 +292,25 @@ cancelLeaveButton.MouseButton1Click:Connect(function()
 end)
 
 confirmLeaveButton.MouseButton1Click:Connect(function()
-    confirmationFrame.Visible = false
-    lobbyDetailsFrame.Visible = false
+   
     leaveLobby()
+end)
+
+leaveLobbyEvent.OnClientEvent:Connect(function(hostId,playerWhoLeft)
+    if currentLobby == tostring(hostId) then
+        if playerWhoLeft.UserId == player.UserId then
+            lobbyDetailsFrame.Visible = false
+        else
+            local plrName = getPlayerNameFromId(playerWhoLeft.UserId)
+            if guardsTeam:FindFirstChild(plrName) then
+                guardsTeam:FindFirstChild(plrName):Destroy()
+            end
+            if intrudersTeam:FindFirstChild(plrName) then
+                intrudersTeam:FindFirstChild(plrName):Destroy()
+            end
+            if spectatorsTeam:FindFirstChild(plrName) then
+                spectatorsTeam:FindFirstChild(plrName):Destroy()
+            end
+        end
+    end
 end)
