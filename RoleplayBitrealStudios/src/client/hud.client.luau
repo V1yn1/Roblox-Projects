@@ -62,7 +62,7 @@ local function playerCamera()
             pitch = math.clamp(pitch - input.Delta.Y * sensitivity, minPitch, maxPitch)
         end
     end)
-    
+
     -- Atualiza câmera
     task.spawn(function()
         RunService.RenderStepped:Connect(function()
@@ -102,5 +102,14 @@ local function playerCamera()
 
 end
 
+local function LifeBar()
+    local lifeBar = controller.lifeBar
+    local life = lifeBar.life
+    life.Visible =true
+
+    life:TweenSize(UDim2.new(player.Character.Humanoid.Health/100,0,1,0),Enum.EasingDirection.Out,Enum.EasingStyle.Quint)
+end
 LoadMinimap()
 playerCamera()
+LifeBar()
+player.Character.Humanoid:GetPropertyChangedSignal("Health"):Connect(LifeBar)
