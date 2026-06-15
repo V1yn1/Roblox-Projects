@@ -145,6 +145,25 @@ UserInputService.InputBegan:Connect(function(input)
     end
 end)
 
+local firstTimeLoading = true
+controller.backpack:GetPropertyChangedSignal("Enabled"):Connect(function()
+    if controller.backpack.Enabled then
+        if firstTimeLoading then
+            firstTimeLoading = false
+            controller.playerName.Text = player.DisplayName
+            local thumbType = Enum.ThumbnailType.HeadShot
+            local thumbSize = Enum.ThumbnailSize.Size420x420
+            local content, isReady = game.Players:GetUserThumbnailAsync(player.UserId, thumbType, thumbSize)
+            controller.playerPhoto.Image = content
+            local cpf = player:FindFirstChild("playerdata"):FindFirstChild("cpf")
+            controller.playerCpf.Text = cpf.Value
+        end
+
+    end
+end)
+
+player.Character:WaitForChild("HumanoidRootPart")
+
 LoadMinimap()
 playerCamera()
 
