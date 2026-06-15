@@ -64,7 +64,7 @@ local function playerCamera()
     end)
 
     -- Atualiza câmera
-    task.spawn(function()
+    local spawncamera = task.spawn(function()
         RunService.RenderStepped:Connect(function()
             local character = player.Character
             if not character then return end
@@ -99,6 +99,19 @@ local function playerCamera()
 
     end)
 
+    UserInputService.InputBegan:Connect(function(input)
+        if input.KeyCode == Enum.KeyCode.LeftAlt then
+            if UserInputService.MouseBehavior == Enum.MouseBehavior.LockCenter then
+                task.cancel(spawncamera)
+                UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+                UserInputService.MouseIconEnabled = true
+            else
+                task.spawn(spawncamera)
+                UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
+                UserInputService.MouseIconEnabled = false
+            end
+        end
+    end)
 
 end
 
@@ -109,7 +122,31 @@ local function LifeBar()
 
     life:TweenSize(UDim2.new(player.Character.Humanoid.Health/100,0,1,0),Enum.EasingDirection.Out,Enum.EasingStyle.Quint)
 end
+
+controller.backpackButton.MouseButton1Down:Connect(function()
+    controller.backpack.Enabled = not controller.backpack.Enabled
+end)
+
+controller.configButton.MouseButton1Down:Connect(function()
+    print("open config")
+end)
+
+controller.phoneButton.MouseButton1Down:Connect(function()
+    print("open phone")
+end)
+
+UserInputService.InputBegan:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.Tab then
+        controller.backpack.Enabled = not controller.backpack.Enabled
+    elseif input.KeyCode == Enum.KeyCode.B then
+        print("open phone")
+    elseif input.KeyCode == Enum.KeyCode.P then
+        print("open config")
+    end
+end)
+
 LoadMinimap()
 playerCamera()
+
 LifeBar()
 player.Character.Humanoid:GetPropertyChangedSignal("Health"):Connect(LifeBar)
