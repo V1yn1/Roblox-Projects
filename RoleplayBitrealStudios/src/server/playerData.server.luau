@@ -1,43 +1,63 @@
 local DataStoreService = game:GetService("DataStoreService")
 local DataStore = DataStoreService:GetDataStore("playerData")
-local DataStoreCpf = DataStoreService:GetDataStore("cpf")
-local playersCpf = {nil}
+local cpfStore = DataStoreService:GetDataStore("CPF_COUNTER_V1")
 
---gera o cpf válido
-local function gerarCPF(): string
+local function calcularDigitos(base: string): string
 	local digitos = {}
 
-	-- 1. Gerar os 9 primeiros dígitos aleatórios
-	for i = 1, 9 do
-		table.insert(digitos, math.random(0, 9))
+	for i = 1, #base do
+		digitos[i] = tonumber(base:sub(i, i))
 	end
 
-	-- 2. Calcular o primeiro dígito verificador
 	local soma1 = 0
 	for i = 1, 9 do
-		soma1 = soma1 + (digitos[i] * (11 - i))
+		soma1 += digitos[i] * (11 - i)
 	end
-	local resto1 = (soma1 * 10) % 11
-	local digito1 = (resto1 == 10 or resto1 == 11) and 0 or resto1
-	table.insert(digitos, digito1)
 
-	-- 3. Calcular o segundo dígito verificador
+	local resto1 = (soma1 * 10) % 11
+	local d1 = (resto1 == 10) and 0 or resto1
+	table.insert(digitos, d1)
+
 	local soma2 = 0
 	for i = 1, 10 do
-		soma2 = soma2 + (digitos[i] * (12 - i))
+		soma2 += digitos[i] * (12 - i)
 	end
-	local resto2 = (soma2 * 10) % 11
-	local digito2 = (resto2 == 10 or resto2 == 11) and 0 or resto2
-	table.insert(digitos, digito2)
 
-	-- 4. Formatar o resultado final (ex: 123.456.789-10)
+	local resto2 = (soma2 * 10) % 11
+	local d2 = (resto2 == 10) and 0 or resto2
+
+	return tostring(d1) .. tostring(d2)
+end
+
+local function formatarCPF(base: string, verificadores: string): string
 	return string.format(
-		"%d%d%d.%d%d%d.%d%d%d-%d%d",
-		digitos[1], digitos[2], digitos[3],
-		digitos[4], digitos[5], digitos[6],
-		digitos[7], digitos[8], digitos[9],
-		digitos[10], digitos[11]
+		"%s%s%s.%s%s%s.%s%s%s-%s%s",
+		base:sub(1,1), base:sub(2,2), base:sub(3,3),
+		base:sub(4,4), base:sub(5,5), base:sub(6,6),
+		base:sub(7,7), base:sub(8,8), base:sub(9,9),
+		verificadores:sub(1,1), verificadores:sub(2,2)
 	)
+end
+
+local function gerarCPFUnico(): string?
+	local sucesso, numero = pcall(function()
+		return cpfStore:IncrementAsync("ultimoCPF", 1)
+	end)
+
+	if not sucesso then
+		warn("Erro ao gerar CPF:", numero)
+		return nil
+	end
+
+	if numero > 999999999 then
+		warn("Limite de CPFs esgotado")
+		return nil
+	end
+
+	local base = string.format("%09d", numero)
+	local verificadores = calcularDigitos(base)
+
+	return formatarCPF(base, verificadores)
 end
 
 game.Players.PlayerAdded:Connect(function(player)
@@ -70,9 +90,7 @@ game.Players.PlayerAdded:Connect(function(player)
         bank.Value = result["bank"]
     elseif succes and  result == nil then
         task.spawn(function()
-            repeat
-                cpf.Value = gerarCPF()
-            until table.find(playersCpf,cpf.Value,1) == nil
+            cpf.Value = gerarCPFUnico()
         end)
         team.Value = "Civil"
         wallet.Value = 1000
@@ -81,5 +99,29 @@ game.Players.PlayerAdded:Connect(function(player)
         player:Kick("error while loading data, please rejoin")
         return
     end
-    playersCpf[#playersCpf+1] = cpf.Value
+
+end)
+
+local function SaveData (player:Player)
+    local leaderStats = player:FindFirstChild("leaderstats")
+    local playerData = player:FindFirstChild("playerdata")
+    local data = {
+        ["cpf"] = playerData.cpf.Value,
+        ["team"] = playerData.time.Value,
+        ["wallet"] = leaderStats.carteira.Value,
+        ["bank"] = leaderStats.banco.Value
+    }
+    DataStore:SetAsync(player.UserId,data)
+end
+
+game.Players.PlayerRemoving:Connect(function(player)
+    SaveData(player)
+end)
+
+game:BindToClose(function()
+    for i,v in pairs(game.Players:GetChildren()) do
+        SaveData(v)
+        task.wait(.1)
+    end
+    task.wait(3)
 end)
