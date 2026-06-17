@@ -163,7 +163,7 @@ controller.backpack:GetPropertyChangedSignal("Enabled"):Connect(function()
 end)
 
 player.Character:WaitForChild("HumanoidRootPart")
-
+task.wait(10)
 LoadMinimap()
 playerCamera()
 
