@@ -132,15 +132,17 @@ controller.configButton.MouseButton1Down:Connect(function()
 end)
 
 controller.phoneButton.MouseButton1Down:Connect(function()
-    print("open phone")
+    controller.phone.Enabled = not controller.phone.Enabled
 end)
 
-UserInputService.InputBegan:Connect(function(input)
-    if input.KeyCode == Enum.KeyCode.Tab then
+UserInputService.InputBegan:Connect(function(input,gpe)
+    if gpe then return end
+
+    if input.KeyCode == controller.keyBind_backpack then
         controller.backpack.Enabled = not controller.backpack.Enabled
-    elseif input.KeyCode == Enum.KeyCode.B then
-        print("open phone")
-    elseif input.KeyCode == Enum.KeyCode.P then
+    elseif input.KeyCode == controller.keyBind_phone then
+        controller.phone.Enabled = not controller.phone.Enabled
+    elseif input.KeyCode == controller.keyBind_config then
         print("open config")
     end
 end)
@@ -158,7 +160,8 @@ controller.backpack:GetPropertyChangedSignal("Enabled"):Connect(function()
             local cpf = player:FindFirstChild("playerdata"):FindFirstChild("cpf")
             controller.playerCpf.Text = cpf.Value
         end
-
+        controller.walletText.Text = " Carteira      : "..tostring(player:FindFirstChild("leaderstats"):FindFirstChild("carteira").Value)
+        controller.bankText.Text = " Banco      : "..tostring(player:FindFirstChild("leaderstats"):FindFirstChild("banco").Value)
     end
 end)
 

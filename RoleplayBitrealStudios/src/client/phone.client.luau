@@ -1,0 +1,69 @@
+local controller = require(game.ReplicatedStorage:WaitForChild("Controllers"):WaitForChild("hudController"))
+local player = game.Players.LocalPlayer
+
+local function GoHome ()
+    for i,v in pairs(controller.handler_phone:GetChildren()) do
+        if v.Name ~= "bezels" and v.Name ~= "home" and v:IsA("Frame") then
+            v.Visible = false
+        end
+    end
+    controller.home_phone.Visible = true
+    controller.homeButton_phone.Visible = false
+end
+
+local function AbrirApp(nome)
+    GoHome()
+    if controller.handler_phone:FindFirstChild(nome) and controller.handler_phone:FindFirstChild(nome):IsA("Frame") then
+        controller.handler_phone:FindFirstChild(nome).Visible = true
+        controller.homeButton_phone.Visible = true
+        controller.home_phone.Visible = false
+    else
+        warn("no app screen found")
+    end
+end
+-- configApp
+local function MudarWallpaper()
+    if controller.configApp_phone.wallpaperId.Text == "" then
+        controller.home_phone.background.Image = "rbxassetid://105963729199069"
+        return
+    end
+
+    controller.home_phone.background.Image = "rbxassetid://"..controller.configApp_phone.wallpaperId.Text
+end
+local function MudarKeybind()
+    if controller.configApp_phone.keybind.Text == "" then
+        return
+    end
+    local sucess,keyCode = pcall(function()
+        return Enum.KeyCode[string.upper(string.sub(controller.configApp_phone.keybind.Text,1,1))..string.sub(controller.configApp_phone.keybind.Text,2)]
+    end)
+    if sucess and keyCode then
+        controller.keyBind_phone = keyCode
+    end
+end
+
+local function CarregarInformacoes()
+   controller.configApp_phone:FindFirstChild("playerName").Text = player.DisplayName
+   if player.playerdata.pNumber.Value ~= 0 or player.playerdata.pNumber.Value ~= nil then
+        controller.configApp_phone:FindFirstChild("playerMail").Text = "("..string.sub(tostring(player.playerdata.pNumber.Value),1,2)..")"
+            ..string.sub(tostring(player.playerdata.pNumber.Value),3,7).."-"..string.sub(tostring(player.playerdata.pNumber.Value),8)
+   end
+end
+
+task.wait(10)
+
+for i,v in pairs(controller.apps_phone:GetChildren()) do
+    if v:IsA("ImageButton") then
+        v.MouseButton1Down:Connect(function()
+            AbrirApp(v.Name)
+        end)
+    end
+end
+controller.configApp_phone:GetPropertyChangedSignal("Visible"):Connect(function()
+    if controller.configApp_phone.Visible then
+        CarregarInformacoes()
+    end
+end)
+controller.homeButton_phone.MouseButton1Down:Connect(GoHome)
+controller.configApp_phone.wallpaperId:GetPropertyChangedSignal("Text"):Connect(MudarWallpaper)
+controller.configApp_phone.keybind:GetPropertyChangedSignal("Text"):Connect(MudarKeybind)

@@ -79,6 +79,9 @@ game.Players.PlayerAdded:Connect(function(player)
     local bank = Instance.new("NumberValue",leaderStats)
     bank.Name = "banco"
 
+    local pNumber = Instance.new("NumberValue",playerData)
+    pNumber.Name = "pNumber"
+
     local succes,result =  pcall(function()
        return DataStore:GetAsync(player.UserId)
     end)
@@ -88,6 +91,7 @@ game.Players.PlayerAdded:Connect(function(player)
         team.Value = result["team"]
         wallet.Value = result["wallet"]
         bank.Value = result["bank"]
+        pNumber.Value = result["pNumber"]
     elseif succes and  result == nil then
         task.spawn(function()
             cpf.Value = gerarCPFUnico()
@@ -109,7 +113,8 @@ local function SaveData (player:Player)
         ["cpf"] = playerData.cpf.Value,
         ["team"] = playerData.time.Value,
         ["wallet"] = leaderStats.carteira.Value,
-        ["bank"] = leaderStats.banco.Value
+        ["bank"] = leaderStats.banco.Value,
+        ["pNumber"] = playerData.pNumber.Value
     }
     DataStore:SetAsync(player.UserId,data)
 end
@@ -120,8 +125,9 @@ end)
 
 game:BindToClose(function()
     for i,v in pairs(game.Players:GetChildren()) do
+        task.wait(.3)
         SaveData(v)
-        task.wait(.1)
     end
+    warn("data saved")
     task.wait(3)
 end)
