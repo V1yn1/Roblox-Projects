@@ -24,7 +24,8 @@ local function LoadMinimap()
         newCamera.CFrame = CFrame.new(newCamera.CFrame.Position + Vector3.new(0,100,0),player.Character.HumanoidRootPart.Position)
         minimap.CurrentCamera = newCamera
        RunService.Heartbeat:Connect(function()
-            local rootPart = player.Character.HumanoidRootPart
+            local rootPart = player.Character:WaitForChild("HumanoidRootPart")
+            if not rootPart then return end
             local height = 100
             local cameraPos = rootPart.Position + Vector3.new(0, height, 0)
             local lookVector = rootPart.CFrame.LookVector

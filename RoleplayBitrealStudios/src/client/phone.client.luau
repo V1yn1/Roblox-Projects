@@ -1,5 +1,6 @@
 local controller = require(game.ReplicatedStorage:WaitForChild("Controllers"):WaitForChild("hudController"))
 local player = game.Players.LocalPlayer
+local criarNumero = game.ReplicatedStorage:WaitForChild("Events"):WaitForChild("CriarNumero")
 
 local function GoHome ()
     for i,v in pairs(controller.handler_phone:GetChildren()) do
@@ -44,12 +45,19 @@ end
 
 local function CarregarInformacoes()
    controller.configApp_phone:FindFirstChild("playerName").Text = player.DisplayName
-   if player.playerdata.pNumber.Value ~= 0 or player.playerdata.pNumber.Value ~= nil then
+   if player.playerdata.pNumber.Value ~= 0 and player.playerdata.pNumber.Value ~= nil then
         controller.configApp_phone:FindFirstChild("playerMail").Text = "("..string.sub(tostring(player.playerdata.pNumber.Value),1,2)..")"
             ..string.sub(tostring(player.playerdata.pNumber.Value),3,7).."-"..string.sub(tostring(player.playerdata.pNumber.Value),8)
    end
 end
-
+local function EditarNumero ()
+     local editFrame = controller.configApp_phone.editEmail
+     local textField = editFrame.keybind
+     if tonumber(textField.Text) and textField.Text ~= "" then
+        local text = textField.Text
+        criarNumero:FireServer(text)
+     end
+end
 task.wait(10)
 
 for i,v in pairs(controller.apps_phone:GetChildren()) do
@@ -64,6 +72,18 @@ controller.configApp_phone:GetPropertyChangedSignal("Visible"):Connect(function(
         CarregarInformacoes()
     end
 end)
+
+controller.configApp_phone.edit.MouseButton1Down:Connect(function()
+    local editFrame = controller.configApp_phone.editEmail
+    editFrame.Visible = true
+end)
+controller.configApp_phone.editEmail.exit.MouseButton1Down:Connect(function()
+    local editFrame = controller.configApp_phone.editEmail
+    local textField = editFrame.keybind
+    editFrame.Visible = false
+    textField.Text = ""
+end)
 controller.homeButton_phone.MouseButton1Down:Connect(GoHome)
 controller.configApp_phone.wallpaperId:GetPropertyChangedSignal("Text"):Connect(MudarWallpaper)
 controller.configApp_phone.keybind:GetPropertyChangedSignal("Text"):Connect(MudarKeybind)
+controller.configApp_phone.editEmail.back.MouseButton1Down:Connect(EditarNumero)
