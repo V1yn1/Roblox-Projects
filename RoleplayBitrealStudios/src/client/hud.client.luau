@@ -2,6 +2,8 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local player = game.Players.LocalPlayer
 local controller = require(game.ReplicatedStorage:WaitForChild("Controllers"):WaitForChild("hudController"))
+local cameraConnection
+local inputConnection
 
 local function LoadMinimap()
     local minimap = controller.minimap
@@ -11,11 +13,10 @@ local function LoadMinimap()
             v:Clone().Parent = minimap
         end
     end
-    for i,v in pairs(game.Workspace:GetChildren()) do
-        if v:FindFirstChild("Humanoid") and game.Players:FindFirstChild(v.Name) then
-            
-        end
-    end
+    --for i,v in pairs(game.Workspace:GetChildren()) do
+    --  if v:FindFirstChild("Humanoid") and game.Players:FindFirstChild(v.Name) then
+    --  end
+    --end
     task.spawn(function()
         local newCamera = Instance.new("Camera",workspace)
         newCamera.Name = "minimapCamera"
@@ -35,85 +36,83 @@ local function LoadMinimap()
     end)
 end
 
-local function playerCamera()
-    local camera = game.Workspace.CurrentCamera
-    local mouse = player:GetMouse()
-    -- ===== CONFIGURAÇÕES =====
-    local sensitivity = 0.25
-    local distance = 8          -- distância da câmera ao player
-    local shoulderOffset = 2    -- deslocamento lateral (estilo GTA)
-    local heightOffset = 2      -- altura do alvo (mira na altura do peito/cabeça)
-    local minPitch = -60        -- limite de olhar pra baixo
-    local maxPitch = 70         -- limite de olhar pra cima
-    local smoothness = 0.15     -- suavização (0 = travado, 1 = instantâneo)
+local function playerCamera(character)
+	local camera = workspace.CurrentCamera
+	local humanoid = character:WaitForChild("Humanoid")
+	local rootPart = character:WaitForChild("HumanoidRootPart")
 
-    -- Ângulos
-    local yaw = 0    -- horizontal
-    local pitch = -10  -- vertical (começa levemente pra baixo)
+	local sensitivity = 0.25
+	local distance = 8
+	local shoulderOffset = 2
+	local heightOffset = 2
+	local minPitch = -60
+	local maxPitch = 70
+	local smoothness = 0.15
 
-    -- Trava o mouse
-    UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
-    UserInputService.MouseIconEnabled = false
+	local yaw = 0
+	local pitch = -10
+	local cameraEnabled = true
 
-    camera.CameraType = Enum.CameraType.Scriptable
-    -- Captura movimento do mouse
-    UserInputService.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement then
-            yaw = yaw - input.Delta.X * sensitivity
-            pitch = math.clamp(pitch - input.Delta.Y * sensitivity, minPitch, maxPitch)
-        end
-    end)
+	UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
+	UserInputService.MouseIconEnabled = false
+	camera.CameraType = Enum.CameraType.Scriptable
 
-    -- Atualiza câmera
-    local spawncamera = task.spawn(function()
-        RunService.RenderStepped:Connect(function()
-            local character = player.Character
-            if not character then return end
-            local rootPart = character:FindFirstChild("HumanoidRootPart")
-            if not rootPart then return end
+	if inputConnection then
+		inputConnection:Disconnect()
+	end
 
-            -- Ponto de mira (centro da órbita)
-            local targetPos = rootPart.Position + Vector3.new(0, heightOffset, 0)
+	inputConnection = UserInputService.InputChanged:Connect(function(input)
+		if cameraEnabled and input.UserInputType == Enum.UserInputType.MouseMovement then
+			yaw -= input.Delta.X * sensitivity
+			pitch = math.clamp(pitch - input.Delta.Y * sensitivity, minPitch, maxPitch)
+		end
+	end)
 
-            -- Rotação da câmera baseada no mouse
-            local rotation = CFrame.Angles(0, math.rad(yaw), 0) * CFrame.Angles(math.rad(pitch), 0, 0)
+	if cameraConnection then
+		cameraConnection:Disconnect()
+	end
 
-            -- Offset do ombro + distância
-            local offset = rotation:VectorToWorldSpace(Vector3.new(shoulderOffset, 0, distance))
-            local desiredCameraPos = targetPos + offset
+	cameraConnection = RunService.RenderStepped:Connect(function()
+		if not cameraEnabled then return end
+		if not character.Parent then return end
 
-            -- ===== COLISÃO DA CÂMERA (evita atravessar paredes) =====
-            local rayParams = RaycastParams.new()
-            rayParams.FilterDescendantsInstances = {character}
-            rayParams.FilterType = Enum.RaycastFilterType.Exclude
+		local targetPos = rootPart.Position + Vector3.new(0, heightOffset, 0)
 
-            local direction = desiredCameraPos - targetPos
-            local result = workspace:Raycast(targetPos, direction, rayParams)
-            if result then
-                desiredCameraPos = result.Position + (targetPos - desiredCameraPos).Unit * 0.5
-            end
+		local rotation =
+			CFrame.Angles(0, math.rad(yaw), 0)
+			* CFrame.Angles(math.rad(pitch), 0, 0)
 
-            -- Suavização (lerp pra movimento fluido)
-            local goalCFrame = CFrame.lookAt(desiredCameraPos, targetPos + rotation:VectorToWorldSpace(Vector3.new(shoulderOffset, 0, 0)))
-            camera.CFrame = camera.CFrame:Lerp(goalCFrame, smoothness)
-        end)
+		local offset = rotation:VectorToWorldSpace(Vector3.new(shoulderOffset, 0, distance))
+		local desiredCameraPos = targetPos + offset
 
-    end)
+		local rayParams = RaycastParams.new()
+		rayParams.FilterDescendantsInstances = {character}
+		rayParams.FilterType = Enum.RaycastFilterType.Exclude
 
-    UserInputService.InputBegan:Connect(function(input)
-        if input.KeyCode == Enum.KeyCode.LeftAlt then
-            if UserInputService.MouseBehavior == Enum.MouseBehavior.LockCenter then
-                task.cancel(spawncamera)
-                UserInputService.MouseBehavior = Enum.MouseBehavior.Default
-                UserInputService.MouseIconEnabled = true
-            else
-                task.spawn(spawncamera)
-                UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
-                UserInputService.MouseIconEnabled = false
-            end
-        end
-    end)
+		local direction = desiredCameraPos - targetPos
+		local result = workspace:Raycast(targetPos, direction, rayParams)
 
+		if result then
+			desiredCameraPos = result.Position + (targetPos - desiredCameraPos).Unit * 0.5
+		end
+
+		local goalCFrame = CFrame.lookAt(
+			desiredCameraPos,
+			targetPos + rotation:VectorToWorldSpace(Vector3.new(shoulderOffset, 0, 0))
+		)
+
+		camera.CFrame = camera.CFrame:Lerp(goalCFrame, smoothness)
+	end)
+
+	humanoid.Died:Connect(function()
+		if cameraConnection then
+			cameraConnection:Disconnect()
+			cameraConnection = nil
+		end
+
+		UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+		UserInputService.MouseIconEnabled = true
+	end)
 end
 
 local function LifeBar()
@@ -166,10 +165,23 @@ controller.backpack:GetPropertyChangedSignal("Enabled"):Connect(function()
     end
 end)
 
-player.Character:WaitForChild("HumanoidRootPart")
-task.wait(10)
-LoadMinimap()
-playerCamera()
+player.CharacterAdded:Connect(function(character)
+	local humanoid = character:WaitForChild("Humanoid")
+    task.wait(10)
+	LoadMinimap()
+	playerCamera(character)
+	LifeBar()
 
-LifeBar()
-player.Character.Humanoid:GetPropertyChangedSignal("Health"):Connect(LifeBar)
+	humanoid:GetPropertyChangedSignal("Health"):Connect(LifeBar)
+end)
+
+if player.Character then
+	local character = player.Character
+	local humanoid = character:WaitForChild("Humanoid")
+    task.wait(10)
+	LoadMinimap()
+	playerCamera(character)
+	LifeBar()
+
+	humanoid:GetPropertyChangedSignal("Health"):Connect(LifeBar)
+end

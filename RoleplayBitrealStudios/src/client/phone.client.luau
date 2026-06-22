@@ -50,6 +50,7 @@ local function CarregarInformacoes()
             ..string.sub(tostring(player.playerdata.pNumber.Value),3,7).."-"..string.sub(tostring(player.playerdata.pNumber.Value),8)
    end
 end
+
 local function EditarNumero ()
      local editFrame = controller.configApp_phone.editEmail
      local textField = editFrame.keybind
@@ -57,6 +58,13 @@ local function EditarNumero ()
         local text = textField.Text
         criarNumero:FireServer(text)
      end
+    editFrame.Visible = false
+    textField.Text = ""
+    CarregarInformacoes()
+end
+
+local function NotificacoesSwitch()
+    
 end
 task.wait(10)
 

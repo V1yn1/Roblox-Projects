@@ -9,9 +9,10 @@ loadingScreen.Parent = player.PlayerGui
 
 loadingScreen.Enabled = true
 progress.Visible = true
-local loading = 100
+local loading = 500
 local jump = false
 menuMusic:Play()
+player.CharacterAdded:Wait()
 player.Character:WaitForChild("HumanoidRootPart").Anchored = true
 skipButton.MouseButton1Down:Connect(function()
     jump = true
@@ -24,7 +25,7 @@ repeat task.wait(1)
     if jump then
         break
     end
-    progress:TweenSize(UDim2.new(loading/100,0,1,0),Enum.EasingDirection.Out,Enum.EasingStyle.Quint)
+    progress:TweenSize(UDim2.new(loading/500,0,1,0),Enum.EasingDirection.Out,Enum.EasingStyle.Quint)
     loading -= 10
 until loading <= 0
 
