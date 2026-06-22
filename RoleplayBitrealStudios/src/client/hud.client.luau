@@ -4,6 +4,7 @@ local player = game.Players.LocalPlayer
 local controller = require(game.ReplicatedStorage:WaitForChild("Controllers"):WaitForChild("hudController"))
 local cameraConnection
 local inputConnection
+local altConnection
 
 local function LoadMinimap()
     local minimap = controller.minimap
@@ -103,6 +104,27 @@ local function playerCamera(character)
 
 		camera.CFrame = camera.CFrame:Lerp(goalCFrame, smoothness)
 	end)
+    if altConnection then
+	altConnection:Disconnect()
+end
+
+    altConnection = UserInputService.InputBegan:Connect(function(input, gpe)
+        if gpe then return end
+
+        if input.KeyCode == Enum.KeyCode.LeftAlt then
+            cameraEnabled = not cameraEnabled
+
+            UserInputService.MouseBehavior = cameraEnabled
+                and Enum.MouseBehavior.LockCenter
+                or Enum.MouseBehavior.Default
+
+            UserInputService.MouseIconEnabled = not cameraEnabled
+
+            camera.CameraType = cameraEnabled
+                and Enum.CameraType.Scriptable
+                or Enum.CameraType.Custom
+        end
+    end)
 
 	humanoid.Died:Connect(function()
 		if cameraConnection then
