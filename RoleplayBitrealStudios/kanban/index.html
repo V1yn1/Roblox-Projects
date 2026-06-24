@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kanban · RoleplayBitrealStudios</title>
+<style>
+  :root{
+    --bg:#0d1117; --bg2:#161b22; --bg3:#1c2230; --line:#2a3140;
+    --txt:#e6edf3; --muted:#8b949e; --accent:#7c5cff; --accent2:#2f81f7;
+    --green:#3fb950; --yellow:#d29922; --red:#f85149; --cyan:#39c5cf;
+    --radius:12px; --shadow:0 8px 24px rgba(0,0,0,.45);
+  }
+  *{box-sizing:border-box; margin:0; padding:0}
+  html,body{height:100%}
+  body{
+    font-family:"Segoe UI",system-ui,-apple-system,sans-serif;
+    background:radial-gradient(1200px 600px at 20% -10%,#1a2030,transparent),var(--bg);
+    color:var(--txt); overflow:hidden;
+  }
+  /* ---------- Topbar ---------- */
+  header{
+    display:flex; align-items:center; gap:14px; padding:14px 20px;
+    background:linear-gradient(180deg,var(--bg2),rgba(22,27,34,.6));
+    border-bottom:1px solid var(--line); position:relative; z-index:5;
+  }
+  .logo{display:flex; align-items:center; gap:10px; font-weight:700; font-size:18px}
+  .logo .dot{width:12px; height:12px; border-radius:3px; background:linear-gradient(135deg,var(--accent),var(--accent2)); box-shadow:0 0 12px var(--accent)}
+  .logo small{display:block; font-size:11px; color:var(--muted); font-weight:500}
+  .spacer{flex:1}
+  .search{
+    display:flex; align-items:center; gap:8px; background:var(--bg3); border:1px solid var(--line);
+    padding:8px 12px; border-radius:999px; min-width:240px;
+  }
+  .search input{background:none; border:none; color:var(--txt); outline:none; width:100%; font-size:14px}
+  .search svg{flex:none; opacity:.6}
+  button.btn{
+    background:var(--bg3); color:var(--txt); border:1px solid var(--line);
+    padding:9px 14px; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600;
+    display:inline-flex; align-items:center; gap:7px; transition:.15s;
+  }
+  button.btn:hover{background:#222b3a; border-color:#3a4456}
+  button.btn.primary{background:linear-gradient(135deg,var(--accent),var(--accent2)); border:none; color:#fff}
+  button.btn.primary:hover{filter:brightness(1.1)}
+  .stat{font-size:12px; color:var(--muted); padding:0 6px}
+  .stat b{color:var(--txt)}
+
+  /* ---------- Board ---------- */
+  .board-wrap{height:calc(100vh - 64px); overflow-x:auto; overflow-y:hidden; padding:18px}
+  .board{display:flex; gap:16px; height:100%; align-items:flex-start; min-width:min-content}
+  .col{
+    background:linear-gradient(180deg,var(--bg2),#13171f); border:1px solid var(--line);
+    border-radius:var(--radius); width:300px; flex:none; display:flex; flex-direction:column;
+    max-height:100%; box-shadow:var(--shadow);
+  }
+  .col.drag-over{border-color:var(--accent); box-shadow:0 0 0 2px rgba(124,92,255,.35)}
+  .col-head{
+    display:flex; align-items:center; gap:8px; padding:12px 14px; border-bottom:1px solid var(--line);
+    cursor:grab;
+  }
+  .col-head .swatch{width:10px; height:10px; border-radius:50%}
+  .col-title{font-weight:700; font-size:14px; flex:1; outline:none; border-radius:4px; padding:2px 4px}
+  .col-title:focus{background:var(--bg3)}
+  .col-count{font-size:12px; color:var(--muted); background:var(--bg3); padding:2px 8px; border-radius:999px}
+  .col-menu{cursor:pointer; color:var(--muted); padding:2px 6px; border-radius:6px; font-size:18px; line-height:1}
+  .col-menu:hover{background:var(--bg3); color:var(--txt)}
+  .cards{padding:10px; overflow-y:auto; flex:1; display:flex; flex-direction:column; gap:10px; min-height:40px}
+  .cards::-webkit-scrollbar{width:8px}
+  .cards::-webkit-scrollbar-thumb{background:#2a3140; border-radius:8px}
+  .add-card{
+    margin:0 10px 12px; padding:9px; border:1px dashed var(--line); border-radius:8px; color:var(--muted);
+    cursor:pointer; text-align:center; font-size:13px; transition:.15s;
+  }
+  .add-card:hover{border-color:var(--accent); color:var(--txt); background:rgba(124,92,255,.06)}
+
+  /* ---------- Card ---------- */
+  .card{
+    background:var(--bg3); border:1px solid var(--line); border-radius:10px; padding:11px 12px;
+    cursor:grab; position:relative; transition:transform .12s,box-shadow .12s; border-left-width:3px;
+  }
+  .card:hover{border-color:#3a4456; box-shadow:0 4px 14px rgba(0,0,0,.35)}
+  .card.dragging{opacity:.4; transform:scale(.97)}
+  .card .labels{display:flex; flex-wrap:wrap; gap:5px; margin-bottom:7px}
+  .label{font-size:10px; font-weight:700; padding:2px 7px; border-radius:999px; text-transform:uppercase; letter-spacing:.4px}
+  .card h4{font-size:14px; font-weight:600; line-height:1.35; margin-bottom:5px; word-break:break-word}
+  .card p{font-size:12px; color:var(--muted); line-height:1.4; word-break:break-word; white-space:pre-wrap}
+  .card-foot{display:flex; align-items:center; gap:10px; margin-top:9px; font-size:11px; color:var(--muted)}
+  .prio{display:inline-flex; align-items:center; gap:4px; font-weight:600}
+  .prio .pdot{width:8px; height:8px; border-radius:50%}
+  .card-foot .file{font-family:ui-monospace,Consolas,monospace; font-size:10px; background:var(--bg); padding:2px 6px; border-radius:5px; border:1px solid var(--line)}
+  .add-col{
+    width:300px; flex:none; border:1px dashed var(--line); border-radius:var(--radius);
+    color:var(--muted); display:flex; align-items:center; justify-content:center; gap:8px;
+    cursor:pointer; height:54px; font-size:14px; transition:.15s;
+  }
+  .add-col:hover{border-color:var(--accent); color:var(--txt); background:rgba(124,92,255,.05)}
+
+  /* ---------- Modal ---------- */
+  .overlay{
+    position:fixed; inset:0; background:rgba(0,0,0,.6); backdrop-filter:blur(3px);
+    display:none; align-items:center; justify-content:center; z-index:50;
+  }
+  .overlay.show{display:flex}
+  .modal{
+    background:var(--bg2); border:1px solid var(--line); border-radius:16px; width:520px; max-width:92vw;
+    max-height:88vh; overflow-y:auto; box-shadow:var(--shadow); animation:pop .18s ease;
+  }
+  @keyframes pop{from{transform:scale(.95) translateY(8px); opacity:0}to{transform:none; opacity:1}}
+  .modal-head{display:flex; align-items:center; justify-content:space-between; padding:18px 20px; border-bottom:1px solid var(--line)}
+  .modal-head h3{font-size:16px}
+  .modal-body{padding:20px; display:flex; flex-direction:column; gap:16px}
+  .field label{display:block; font-size:12px; color:var(--muted); margin-bottom:6px; font-weight:600; text-transform:uppercase; letter-spacing:.4px}
+  .field input,.field textarea,.field select{
+    width:100%; background:var(--bg3); border:1px solid var(--line); color:var(--txt);
+    padding:10px 12px; border-radius:8px; font-size:14px; outline:none; font-family:inherit;
+  }
+  .field input:focus,.field textarea:focus,.field select:focus{border-color:var(--accent)}
+  .field textarea{resize:vertical; min-height:80px}
+  .row{display:flex; gap:12px} .row .field{flex:1}
+  .label-picker{display:flex; flex-wrap:wrap; gap:8px}
+  .label-opt{padding:5px 11px; border-radius:999px; font-size:11px; font-weight:700; cursor:pointer; opacity:.4; border:2px solid transparent; transition:.12s; text-transform:uppercase; letter-spacing:.4px}
+  .label-opt.on{opacity:1; border-color:rgba(255,255,255,.5)}
+  .modal-foot{display:flex; gap:10px; padding:16px 20px; border-top:1px solid var(--line)}
+  .modal-foot .spacer{flex:1}
+  .icon-x{cursor:pointer; color:var(--muted); font-size:22px; line-height:1}
+  .icon-x:hover{color:var(--txt)}
+  .del-link{color:var(--red); background:none; border:none; cursor:pointer; font-size:13px; font-weight:600}
+  .del-link:hover{text-decoration:underline}
+
+  /* context menu */
+  .ctx{position:fixed; background:var(--bg3); border:1px solid var(--line); border-radius:10px; box-shadow:var(--shadow); z-index:60; display:none; overflow:hidden; min-width:170px}
+  .ctx.show{display:block}
+  .ctx div{padding:10px 14px; font-size:13px; cursor:pointer; display:flex; align-items:center; gap:9px}
+  .ctx div:hover{background:#222b3a}
+  .ctx div.danger{color:var(--red)}
+  .toast{position:fixed; bottom:22px; left:50%; transform:translateX(-50%); background:var(--bg3); border:1px solid var(--line); padding:11px 18px; border-radius:10px; font-size:13px; box-shadow:var(--shadow); opacity:0; transition:.25s; z-index:80; pointer-events:none}
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(-6px)}
+  input[type=file]{display:none}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">
+    <span class="dot"></span>
+    <div>RoleplayBitrealStudios <small>Kanban do projeto · Roblox / Rojo</small></div>
+  </div>
+  <div class="spacer"></div>
+  <div class="stat"><b id="statTotal">0</b> cards · <b id="statDone">0</b> concluídos</div>
+  <div class="search">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4-4"/></svg>
+    <input id="search" placeholder="Buscar cards...">
+  </div>
+  <button class="btn" id="btnExport" title="Exportar JSON">⬇ Exportar</button>
+  <button class="btn" id="btnImport" title="Importar JSON">⬆ Importar</button>
+  <input type="file" id="fileInput" accept="application/json">
+  <button class="btn" id="btnReset" title="Restaurar tarefas iniciais">↺ Reset</button>
+  <button class="btn primary" id="btnAddCard">＋ Novo card</button>
+</header>
+
+<div class="board-wrap"><div class="board" id="board"></div></div>
+
+<!-- Card modal -->
+<div class="overlay" id="cardModal">
+  <div class="modal">
+    <div class="modal-head"><h3 id="cardModalTitle">Novo card</h3><span class="icon-x" data-close>×</span></div>
+    <div class="modal-body">
+      <div class="field"><label>Título</label><input id="fTitle" placeholder="O que precisa ser feito?"></div>
+      <div class="field"><label>Descrição</label><textarea id="fDesc" placeholder="Detalhes, contexto, critérios..."></textarea></div>
+      <div class="row">
+        <div class="field"><label>Coluna</label><select id="fCol"></select></div>
+        <div class="field"><label>Prioridade</label><select id="fPrio">
+          <option value="low">Baixa</option><option value="med">Média</option><option value="high">Alta</option>
+        </select></div>
+      </div>
+      <div class="field"><label>Arquivo / referência (opcional)</label><input id="fFile" placeholder="src/server/playerData.server.luau"></div>
+      <div class="field"><label>Etiquetas</label><div class="label-picker" id="labelPicker"></div></div>
+    </div>
+    <div class="modal-foot">
+      <button class="del-link" id="btnDeleteCard" style="display:none">🗑 Excluir card</button>
+      <div class="spacer"></div>
+      <button class="btn" data-close>Cancelar</button>
+      <button class="btn primary" id="btnSaveCard">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div class="ctx" id="colCtx">
+  <div data-act="rename">✏️ Renomear coluna</div>
+  <div data-act="color">🎨 Trocar cor</div>
+  <div data-act="clear">🧹 Limpar cards</div>
+  <div data-act="delete" class="danger">🗑 Excluir coluna</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const LABELS = {
+  // tipo
+  bug:      {name:"Bug",        color:"#f85149"},
+  feature:  {name:"Feature",    color:"#3fb950"},
+  polish:   {name:"Polish",     color:"#8b949e"},
+  // técnico
+  client:   {name:"Client",     color:"#2f81f7"},
+  server:   {name:"Server",     color:"#d29922"},
+  data:     {name:"DataStore",  color:"#39c5cf"},
+  ui:       {name:"UI/UX",      color:"#bc7cff"},
+  // domínio RP (estilo cidade FiveM)
+  economia: {name:"Economia",   color:"#ffd33d"},
+  emprego:  {name:"Emprego",    color:"#56d364"},
+  veiculo:  {name:"Veículo",    color:"#ff7b72"},
+  policia:  {name:"Polícia",    color:"#58a6ff"},
+  saude:    {name:"Saúde/EMS",  color:"#ff9bce"},
+  crime:    {name:"Crime",      color:"#f0883e"},
+  inventario:{name:"Inventário",color:"#e3b341"},
+  imovel:   {name:"Imóvel",     color:"#d2a8ff"},
+  telefone: {name:"Telefone",   color:"#79c0ff"},
+  social:   {name:"Social/RP",  color:"#a5d6ff"},
+  admin:    {name:"Admin",      color:"#b1bac4"},
+};
+const PRIO = {low:{t:"Baixa",c:"#3fb950"}, med:{t:"Média",c:"#d29922"}, high:{t:"Alta",c:"#f85149"}};
+const COL_COLORS = ["#8b949e","#2f81f7","#d29922","#3fb950","#bc7cff","#39c5cf","#f85149"];
+const KEY = "rbs_kanban_v2";
+
+/* ---------- Seed: cidade RP estilo GTA V / FiveM (adaptado ao projeto Roblox) ---------- */
+function seed(){
+  const c = (title,desc,prio,labels,file)=>({id:uid(),title,desc,prio,labels,file});
+  return {cols:[
+    /* ============ BACKLOG — escopo completo da cidade ============ */
+    {id:uid(), name:"Backlog", color:"#8b949e", cards:[
+      // --- Economia ---
+      c("ATM / Caixa eletrônico","Pontos de saque e depósito movendo valor entre carteira e banco. Limite por saque e taxa opcional.","high",["feature","economia","server","ui"],""),
+      c("Pagamento por hora (paycheck)","Salário automático a cada X minutos conforme o emprego do jogador. Vai direto pro banco.","med",["feature","economia","emprego","server"],""),
+      c("Transferência bancária pelo telefone","App de banco com transferência (PIX) entre jogadores usando o pNumber/CPF. Histórico de transações.","med",["feature","economia","telefone","server"],"src/client/phone.client.luau"),
+      c("Lojas (24/7, roupas, armas)","NPCs/balcões de loja para comprar itens, comida, roupas e armas pagando da carteira.","med",["feature","economia","inventario"],""),
+      c("Mercado de anúncios (player-to-player)","App no telefone para anunciar e comprar itens/veículos entre jogadores.","low",["feature","economia","telefone"],""),
+
+      // --- Empregos ---
+      c("Emprego: Polícia (PD)","Definir facção policial, hierarquia/ranks, equipamento e ponto de serviço. Usa o StringValue 'ocupação'.","high",["feature","emprego","policia","server"],"src/server/playerData.server.luau"),
+      c("Emprego: Médico / EMS","Equipe médica que reanima e cura jogadores feridos. Ponto de spawn no hospital.","high",["feature","emprego","saude","server"],""),
+      c("Emprego: Mecânico","Oficina para consertar, reabastecer e fazer tuning de veículos por pagamento.","med",["feature","emprego","veiculo"],""),
+      c("Empregos civis (taxista, lixeiro, entregador)","Empregos de início rápido com missões repetíveis e pagamento por entrega.","low",["feature","emprego"],""),
+      c("Centro de emprego / troca de função","Local para entrar/sair de empregos. Atualiza 'ocupação' e libera permissões.","med",["feature","emprego","server"],"src/server/playerData.server.luau"),
+
+      // --- Veículos ---
+      c("Sistema de garagem","Guardar e retirar veículos próprios. Persistir frota do jogador no DataStore.","high",["feature","veiculo","data","server"],""),
+      c("Concessionária","Comprar veículos pagando da carteira/banco; registra dono e adiciona à garagem.","med",["feature","veiculo","economia"],""),
+      c("Chaves de veículo + lockpick","Travar/destravar pelo dono; lockpick para roubo (crime). Impede dirigir sem chave.","med",["feature","veiculo","crime"],""),
+      c("Combustível + postos de gasolina","Tanque que esvazia ao dirigir e postos para reabastecer pagando.","med",["feature","veiculo","economia"],""),
+      c("HUD do veículo (velocímetro/combustível)","Mostrar velocidade, marcha e combustível ao entrar no veículo.","low",["feature","veiculo","ui","client"],"src/controllers/hudController.luau"),
+      c("Apreensão de veículo (polícia)","Polícia pode apreender/rebocar veículos. Pátio para retirada mediante multa.","low",["feature","veiculo","policia"],""),
+
+      // --- Inventário ---
+      c("Sistema de inventário com peso","Itens com peso e limite de carga. Usar, dar, dropar no chão e equipar.","high",["feature","inventario","client","server"],""),
+      c("Hotbar de itens","Barra de acesso rápido (1-5) para usar itens equipados.","med",["feature","inventario","ui","client"],""),
+      c("Baús / storage","Armazenamento em casas e porta-malas de veículos, persistido por dono.","med",["feature","inventario","imovel","data"],""),
+
+      // --- Imóveis ---
+      c("Compra e aluguel de casas","Comprar/alugar imóveis com dono persistido. Entrar/sair do interior.","low",["feature","imovel","economia","data"],""),
+      c("Interior e mobília","Interiores instanciados e móveis/baú dentro da casa.","low",["feature","imovel"],""),
+
+      // --- Telefone (expandir base existente) ---
+      c("App Contatos","Adicionar/editar contatos vinculados ao pNumber para ligar e enviar SMS.","med",["feature","telefone","client"],"src/client/phone.client.luau"),
+      c("App Mensagens (SMS)","Troca de mensagens entre jogadores via pNumber, com persistência.","med",["feature","telefone","server","data"],""),
+      c("Notificações push do telefone","Implementar NotificacoesSwitch() (hoje vazia) e exibir notificações dos apps.","med",["feature","telefone","client"],"src/client/phone.client.luau"),
+
+      // --- Polícia / Crime ---
+      c("Algemar / revistar / prender","Polícia algema, revista inventário e leva à cadeia com tempo de prisão.","high",["feature","policia","crime","server"],""),
+      c("MDT — computador da polícia","Consultar ficha por CPF/nome, registros e procurados (wanted).","med",["feature","policia","ui"],""),
+      c("Sistema de procurado (wanted)","Nível de procurado que aumenta ao cometer crimes e some com o tempo/prisão.","med",["feature","crime","policia","server"],""),
+      c("Assalto a loja de conveniência","Roubo de caixa com cooldown que dispara alerta para a polícia.","low",["feature","crime"],""),
+      c("Assalto a banco (heist)","Heist cooperativo com etapas, recompensa e resposta policial.","low",["feature","crime"],""),
+      c("Drogas: plantio, processo e venda","Cadeia de produção e venda de itens ilegais para NPCs/jogadores.","low",["feature","crime","economia"],""),
+
+      // --- Saúde / sobrevivência ---
+      c("Sistema de ferimento / morte (downed)","Estado caído ao zerar vida, aguardando EMS ou respawn no hospital.","high",["feature","saude","client","server"],"src/client/hud.client.luau"),
+      c("Fome e sede","Barras de fome/sede que drenam com o tempo; comida/bebida nas lojas.","med",["feature","saude","ui","client"],"src/controllers/hudController.luau"),
+
+      // --- Documentos ---
+      c("CNH (carteira de motorista)","Documento exigido para dirigir; emissão e checagem pela polícia.","low",["feature","social","data"],""),
+      c("Mostrar documentos (RG/CPF/CNH)","Comando/ação para exibir identidade a outro jogador.","low",["feature","social","ui"],"src/server/playerData.server.luau"),
+
+      // --- Social / RP ---
+      c("Comandos de RP (/me, /do, /ooc)","Comandos de texto para ações e diálogo de roleplay com balões/feed.","med",["feature","social","ui"],""),
+      c("Chat de voz por proximidade","Voz espacial por distância (proximity), com toggle de sussurro/grito.","med",["feature","social","client"],""),
+      c("Menu de emotes / animações","Menu de animações e poses de RP acionáveis por atalho.","low",["feature","social","client","ui"],""),
+      c("Seleção e criação de personagem","Tela de multichar: criar/escolher personagem e aparência antes de spawnar.","med",["feature","social","ui","data"],""),
+
+      // --- Admin / Facções ---
+      c("Painel de admin + comandos","Comandos e UI para moderação: teleporte, kick/ban, dar item/dinheiro, logs.","med",["feature","admin","server"],""),
+      c("Sistema de logs","Registrar transações, mortes, crimes e ações de admin para auditoria.","low",["feature","admin","data","server"],""),
+      c("Allowlist / candidatura","Fluxo de whitelist (formulário/aprovação) para entrada na cidade.","low",["feature","admin","data"],""),
+      c("Organizações / facções + territórios","Gangues e facções com membros, cofre e disputa de território.","low",["feature","crime","social","server"],""),
+    ]},
+
+    /* ============ A FAZER — próximos da fila (já tem base no código) ============ */
+    {id:uid(), name:"A Fazer", color:"#2f81f7", cards:[
+      c("Menu de configurações (HUD/telefone)","Botões de config só fazem print(\"open config\"). Criar a tela real de opções (keybinds, som, etc.).","high",["feature","client","ui"],"src/client/hud.client.luau"),
+      c("Disparar SalvarConfigPhone no cliente","Servidor escuta SalvarConfigPhone (keybind/wallpaper/notif.) mas o cliente nunca dispara — config do telefone não salva.","high",["bug","telefone","client","data"],"src/server/phoneConfigData.server.luau"),
+      c("Carregar config do telefone no join","phoneConfigData faz GetAsync no PlayerAdded mas descarta o resultado. Aplicar wallpaper/keybind salvos ao entrar.","high",["bug","telefone","server","data"],"src/server/phoneConfigData.server.luau"),
+      c("App Telefone (ligações)","telefoneApp_phone existe no controller mas sem discagem/ligação entre jogadores usando o pNumber.","med",["feature","telefone","client","server"],"src/client/phone.client.luau"),
+      c("Blips de jogadores no minimapa","O bloco que clonaria players para o minimapa está comentado. Adicionar blips de jogadores/NPCs.","med",["feature","client","ui"],"src/client/hud.client.luau"),
+      c("Barra de stamina (correr)","staminaBar referenciada no controller mas sem lógica de corrida/cansaço.","low",["feature","client","ui"],"src/controllers/hudController.luau"),
+    ]},
+
+    /* ============ EM PROGRESSO ============ */
+    {id:uid(), name:"Em Progresso", color:"#d29922", cards:[
+      c("Câmera de ombro em 3ª pessoa","Toggle no Alt já adicionado (commit 5c6ec2f). Ajustar suavização/colisão e testar mira.","med",["client","polish"],"src/client/hud.client.luau"),
+    ]},
+
+    /* ============ REVISÃO / QA ============ */
+    {id:uid(), name:"Revisão / QA", color:"#bc7cff", cards:[
+      c("Race na geração de CPF","gerarCPFUnico() roda em task.spawn; se o jogador sair antes de terminar, SaveData salva CPF vazio. Garantir conclusão antes do save.","high",["bug","server","data"],"src/server/playerData.server.luau"),
+      c("task.wait(10) fixos na inicialização","HUD e phone esperam 10s fixos antes de inicializar. Trocar por sinais de carregamento reais.","low",["polish","client"],"src/client/hud.client.luau"),
+    ]},
+
+    /* ============ CONCLUÍDO ============ */
+    {id:uid(), name:"Concluído", color:"#3fb950", cards:[
+      c("Geração de CPF válido","Gerador de CPF com dígitos verificadores e contador incremental via DataStore.","med",["server","data","social"],"src/server/playerData.server.luau"),
+      c("Número de telefone único","Verificação e registro de número de telefone único por jogador.","med",["telefone","server","data"],"src/server/phoneNumberScript.server.luau"),
+      c("Tela de loading + música","Barra de progresso com botão skip e menuMusic.","low",["client","ui"],"src/client/loadingScreen.client.luau"),
+      c("Save/Load de playerData","leaderstats (carteira/banco), CPF, time e pNumber persistidos via DataStore + BindToClose.","high",["economia","server","data"],"src/server/playerData.server.luau"),
+      c("HUD base + telefone in-game","HUD com minimapa, barra de vida, botões e smartphone com apps (home, config).","med",["client","ui","telefone"],"src/controllers/hudController.luau"),
+    ]},
+  ]};
+}
+
+/* ---------- State ---------- */
+let state = load();
+let editing = null;      // card id sendo editado
+let editingCol = null;   // col id do card / col alvo do ctx menu
+let dragCard = null, dragCol = null;
+
+function uid(){return Math.random().toString(36).slice(2,9)}
+function load(){
+  try{const r=localStorage.getItem(KEY); if(r) return JSON.parse(r);}catch(e){}
+  return seed();
+}
+function save(){localStorage.setItem(KEY, JSON.stringify(state)); render();}
+
+/* ---------- Render ---------- */
+const board = document.getElementById("board");
+function render(){
+  const q = document.getElementById("search").value.trim().toLowerCase();
+  board.innerHTML = "";
+  let total=0, done=0;
+  state.cols.forEach((col,ci)=>{
+    const isDone = /conclu/i.test(col.name);
+    const el = document.createElement("div");
+    el.className="col"; el.dataset.col=col.id;
+    const matched = col.cards.filter(c=>!q || (c.title+" "+c.desc+" "+(c.file||"")).toLowerCase().includes(q));
+    total += col.cards.length; if(isDone) done += col.cards.length;
+    el.innerHTML = `
+      <div class="col-head" draggable="true" data-colhead="${col.id}">
+        <span class="swatch" style="background:${col.color}"></span>
+        <span class="col-title" contenteditable spellcheck="false" data-coltitle="${col.id}">${esc(col.name)}</span>
+        <span class="col-count">${matched.length}</span>
+        <span class="col-menu" data-colmenu="${col.id}">⋯</span>
+      </div>
+      <div class="cards" data-drop="${col.id}"></div>
+      <div class="add-card" data-addcard="${col.id}">＋ Adicionar card</div>`;
+    const cardsEl = el.querySelector(".cards");
+    matched.forEach(card=>cardsEl.appendChild(renderCard(card,col)));
+    board.appendChild(el);
+  });
+  const addCol = document.createElement("div");
+  addCol.className="add-col"; addCol.id="addColBtn"; addCol.innerHTML="＋ Adicionar coluna";
+  board.appendChild(addCol);
+  document.getElementById("statTotal").textContent=total;
+  document.getElementById("statDone").textContent=done;
+  wire();
+}
+function renderCard(card,col){
+  const el=document.createElement("div");
+  el.className="card"; el.draggable=true; el.dataset.card=card.id; el.dataset.col=col.id;
+  const p=PRIO[card.prio]||PRIO.med;
+  el.style.borderLeftColor=p.c;
+  const labels=(card.labels||[]).map(l=>{const L=LABELS[l]; return L?`<span class="label" style="background:${L.color}22;color:${L.color}">${L.name}</span>`:""}).join("");
+  el.innerHTML=`
+    ${labels?`<div class="labels">${labels}</div>`:""}
+    <h4>${esc(card.title)}</h4>
+    ${card.desc?`<p>${esc(card.desc)}</p>`:""}
+    <div class="card-foot">
+      <span class="prio"><span class="pdot" style="background:${p.c}"></span>${p.t}</span>
+      ${card.file?`<span class="file">${esc(shortFile(card.file))}</span>`:""}
+    </div>`;
+  el.addEventListener("click",()=>openCard(card.id,col.id));
+  return el;
+}
+function shortFile(f){const parts=f.split("/"); return parts.length>2?".../"+parts.slice(-1)[0]:f}
+function esc(s){return (s||"").replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]))}
+
+/* ---------- Wiring ---------- */
+function wire(){
+  document.querySelectorAll("[data-addcard]").forEach(b=>b.onclick=e=>{e.stopPropagation(); openCard(null,b.dataset.addcard)});
+  document.getElementById("addColBtn").onclick=addColumn;
+  document.querySelectorAll("[data-coltitle]").forEach(t=>{
+    t.onblur=()=>{const col=findCol(t.dataset.coltitle); const v=t.textContent.trim(); if(col&&v){col.name=v; save();}};
+    t.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault(); t.blur();}};
+  });
+  document.querySelectorAll("[data-colmenu]").forEach(m=>m.onclick=e=>{e.stopPropagation(); openColMenu(e,m.dataset.colmenu)});
+
+  // card drag
+  document.querySelectorAll(".card").forEach(c=>{
+    c.addEventListener("dragstart",e=>{dragCard={id:c.dataset.card,col:c.dataset.col}; c.classList.add("dragging"); e.stopPropagation();});
+    c.addEventListener("dragend",()=>{c.classList.remove("dragging"); dragCard=null;});
+  });
+  // drop zones
+  document.querySelectorAll("[data-drop]").forEach(z=>{
+    z.addEventListener("dragover",e=>{e.preventDefault(); const after=afterEl(z,e.clientY); z.closest(".col").classList.add("drag-over");
+      const d=document.querySelector(".dragging"); if(!d||!dragCard) return;
+      if(after==null) z.appendChild(d); else z.insertBefore(d,after);});
+    z.addEventListener("dragleave",()=>z.closest(".col").classList.remove("drag-over"));
+    z.addEventListener("drop",e=>{e.preventDefault(); z.closest(".col").classList.remove("drag-over");
+      if(dragCard) moveCard(dragCard, z.dataset.drop, [...z.querySelectorAll(".card")].map(x=>x.dataset.card));});
+  });
+  // column drag (reorder)
+  document.querySelectorAll("[data-colhead]").forEach(h=>{
+    h.addEventListener("dragstart",e=>{dragCol=h.dataset.colhead; e.dataTransfer.effectAllowed="move";});
+    h.addEventListener("dragend",()=>dragCol=null);
+  });
+  document.querySelectorAll(".col").forEach(col=>{
+    col.addEventListener("dragover",e=>{if(dragCol) e.preventDefault();});
+    col.addEventListener("drop",e=>{if(dragCol&&dragCol!==col.dataset.col) reorderCol(dragCol,col.dataset.col);});
+  });
+}
+function afterEl(zone,y){
+  const els=[...zone.querySelectorAll(".card:not(.dragging)")];
+  return els.reduce((closest,child)=>{const box=child.getBoundingClientRect(); const off=y-box.top-box.height/2;
+    return off<0&&off>closest.offset?{offset:off,element:child}:closest;},{offset:-Infinity}).element||null;
+}
+
+/* ---------- Mutations ---------- */
+function findCol(id){return state.cols.find(c=>c.id===id)}
+function findCard(cid,colid){const col=findCol(colid); return col&&col.cards.find(c=>c.id===cid)}
+function moveCard(from,toColId,orderIds){
+  const src=findCol(from.col); const dst=findCol(toColId); if(!src||!dst) return;
+  const idx=src.cards.findIndex(c=>c.id===from.id); if(idx<0) return;
+  const [card]=src.cards.splice(idx,1);
+  dst.cards.push(card);
+  // reordena destino conforme DOM
+  dst.cards.sort((a,b)=>orderIds.indexOf(a.id)-orderIds.indexOf(b.id));
+  save();
+}
+function reorderCol(fromId,toId){
+  const fi=state.cols.findIndex(c=>c.id===fromId), ti=state.cols.findIndex(c=>c.id===toId);
+  const [c]=state.cols.splice(fi,1); state.cols.splice(ti,0,c); save();
+}
+function addColumn(){
+  state.cols.push({id:uid(),name:"Nova coluna",color:COL_COLORS[state.cols.length%COL_COLORS.length],cards:[]});
+  save(); toast("Coluna adicionada");
+}
+
+/* ---------- Card modal ---------- */
+const cardModal=document.getElementById("cardModal");
+function openCard(cardId,colId){
+  editing=cardId; editingCol=colId;
+  const sel=document.getElementById("fCol"); sel.innerHTML="";
+  state.cols.forEach(c=>{const o=document.createElement("option"); o.value=c.id; o.textContent=c.name; sel.appendChild(o);});
+  // labels
+  const lp=document.getElementById("labelPicker"); lp.innerHTML="";
+  Object.entries(LABELS).forEach(([k,L])=>{
+    const s=document.createElement("span"); s.className="label-opt"; s.dataset.label=k; s.textContent=L.name;
+    s.style.background=L.color+"22"; s.style.color=L.color;
+    s.onclick=()=>s.classList.toggle("on"); lp.appendChild(s);
+  });
+  const card=cardId?findCard(cardId,colId):null;
+  document.getElementById("cardModalTitle").textContent=card?"Editar card":"Novo card";
+  document.getElementById("fTitle").value=card?card.title:"";
+  document.getElementById("fDesc").value=card?card.desc:"";
+  document.getElementById("fPrio").value=card?card.prio:"med";
+  document.getElementById("fFile").value=card?(card.file||""):"";
+  sel.value=colId;
+  if(card)(card.labels||[]).forEach(l=>{const e=lp.querySelector(`[data-label="${l}"]`); if(e)e.classList.add("on")});
+  document.getElementById("btnDeleteCard").style.display=card?"block":"none";
+  cardModal.classList.add("show");
+  setTimeout(()=>document.getElementById("fTitle").focus(),50);
+}
+function closeModal(){cardModal.classList.remove("show")}
+document.querySelectorAll("[data-close]").forEach(b=>b.onclick=closeModal);
+cardModal.addEventListener("click",e=>{if(e.target===cardModal)closeModal()});
+document.getElementById("btnSaveCard").onclick=()=>{
+  const title=document.getElementById("fTitle").value.trim(); if(!title){toast("Informe um título"); return;}
+  const data={
+    title, desc:document.getElementById("fDesc").value.trim(),
+    prio:document.getElementById("fPrio").value, file:document.getElementById("fFile").value.trim(),
+    labels:[...document.querySelectorAll(".label-opt.on")].map(e=>e.dataset.label),
+  };
+  const targetCol=document.getElementById("fCol").value;
+  if(editing){
+    const card=findCard(editing,editingCol); Object.assign(card,data);
+    if(targetCol!==editingCol) moveCard({id:editing,col:editingCol},targetCol,[]);
+  }else{
+    findCol(targetCol).cards.push({id:uid(),...data});
+  }
+  save(); closeModal(); toast("Card salvo");
+};
+document.getElementById("btnDeleteCard").onclick=()=>{
+  if(!editing) return;
+  const col=findCol(editingCol); col.cards=col.cards.filter(c=>c.id!==editing);
+  save(); closeModal(); toast("Card excluído");
+};
+
+/* ---------- Column context menu ---------- */
+const ctx=document.getElementById("colCtx");
+function openColMenu(e,colId){
+  editingCol=colId; ctx.style.left=Math.min(e.clientX,innerWidth-180)+"px"; ctx.style.top=e.clientY+"px"; ctx.classList.add("show");
+}
+document.addEventListener("click",()=>ctx.classList.remove("show"));
+ctx.querySelectorAll("div").forEach(d=>d.onclick=()=>{
+  const col=findCol(editingCol); const act=d.dataset.act;
+  if(act==="rename"){const n=prompt("Nome da coluna:",col.name); if(n){col.name=n.trim(); save();}}
+  if(act==="color"){const i=COL_COLORS.indexOf(col.color); col.color=COL_COLORS[(i+1)%COL_COLORS.length]; save(); toast("Cor alterada");}
+  if(act==="clear"){if(confirm(`Limpar todos os cards de "${col.name}"?`)){col.cards=[]; save();}}
+  if(act==="delete"){if(state.cols.length<=1){toast("Não pode excluir a última coluna"); return;} if(confirm(`Excluir a coluna "${col.name}"?`)){state.cols=state.cols.filter(c=>c.id!==editingCol); save();}}
+});
+
+/* ---------- Toolbar ---------- */
+document.getElementById("btnAddCard").onclick=()=>openCard(null,state.cols[0].id);
+document.getElementById("search").oninput=render;
+document.getElementById("btnReset").onclick=()=>{if(confirm("Restaurar o quadro para as tarefas iniciais? Suas mudanças locais serão perdidas.")){state=seed(); save(); toast("Quadro restaurado");}};
+document.getElementById("btnExport").onclick=()=>{
+  const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+  a.download="kanban-rbs.json"; a.click(); toast("Exportado");
+};
+document.getElementById("btnImport").onclick=()=>document.getElementById("fileInput").click();
+document.getElementById("fileInput").onchange=e=>{
+  const f=e.target.files[0]; if(!f) return; const r=new FileReader();
+  r.onload=()=>{try{const d=JSON.parse(r.result); if(d.cols){state=d; save(); toast("Importado com sucesso");}else toast("JSON inválido");}catch(err){toast("Erro ao ler arquivo");}};
+  r.readAsText(f); e.target.value="";
+};
+
+document.addEventListener("keydown",e=>{
+  if(e.key==="Escape") closeModal();
+  if((e.ctrlKey||e.metaKey)&&e.key==="Enter"&&cardModal.classList.contains("show")) document.getElementById("btnSaveCard").click();
+  if(e.key==="n"&&!/input|textarea/i.test(e.target.tagName)&&!cardModal.classList.contains("show")){e.preventDefault(); openCard(null,state.cols[0].id);}
+});
+
+let toastT;
+function toast(msg){const t=document.getElementById("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("show"),2000);}
+
+render();
+</script>
+</body>
+</html>

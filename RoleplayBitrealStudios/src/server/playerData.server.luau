@@ -93,12 +93,17 @@ game.Players.PlayerAdded:Connect(function(player)
         bank.Value = result["bank"]
         pNumber.Value = result["pNumber"]
     elseif succes and  result == nil then
-        task.spawn(function()
+       local gerandoCpf = task.spawn(function()
             cpf.Value = gerarCPFUnico()
         end)
         team.Value = "Civil"
         wallet.Value = 1000
         bank.Value = 10000
+        game:BindToClose(function()
+            while gerandoCpf do
+                task.wait()
+            end
+        end)
     else
         player:Kick("error while loading data, please rejoin")
         return

@@ -1,6 +1,7 @@
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local player = game.Players.LocalPlayer
+local playerImages = require(game.ReplicatedStorage:WaitForChild("Shared"):WaitForChild("playerImages"))
 local controller = require(game.ReplicatedStorage:WaitForChild("Controllers"):WaitForChild("hudController"))
 local cameraConnection
 local inputConnection
@@ -25,9 +26,14 @@ local function LoadMinimap()
         newCamera.CameraSubject = player.Character:FindFirstChild("Humanoid")
         newCamera.CFrame = CFrame.new(newCamera.CFrame.Position + Vector3.new(0,100,0),player.Character.HumanoidRootPart.Position)
         minimap.CurrentCamera = newCamera
+        local character = player.Character or player.CharacterAdded:Wait()
+        local rootPart = character:WaitForChild("HumanoidRootPart")
        RunService.Heartbeat:Connect(function()
-            local rootPart = player.Character:WaitForChild("HumanoidRootPart")
-            if not rootPart then return end
+            if not rootPart or not rootPart.Parent then
+                character = player.Character or player.CharacterAdded:Wait()
+                rootPart = character:WaitForChild("HumanoidRootPart",2)
+                return
+            end
             local height = 100
             local cameraPos = rootPart.Position + Vector3.new(0, height, 0)
             local lookVector = rootPart.CFrame.LookVector
@@ -105,8 +111,8 @@ local function playerCamera(character)
 		camera.CFrame = camera.CFrame:Lerp(goalCFrame, smoothness)
 	end)
     if altConnection then
-	altConnection:Disconnect()
-end
+	    altConnection:Disconnect()
+    end
 
     altConnection = UserInputService.InputBegan:Connect(function(input, gpe)
         if gpe then return end
@@ -122,7 +128,7 @@ end
 
             camera.CameraType = cameraEnabled
                 and Enum.CameraType.Scriptable
-                or Enum.CameraType.Custom
+                or Enum.CameraType.Attach
         end
     end)
 
@@ -175,10 +181,7 @@ controller.backpack:GetPropertyChangedSignal("Enabled"):Connect(function()
         if firstTimeLoading then
             firstTimeLoading = false
             controller.playerName.Text = player.DisplayName
-            local thumbType = Enum.ThumbnailType.HeadShot
-            local thumbSize = Enum.ThumbnailSize.Size420x420
-            local content, isReady = game.Players:GetUserThumbnailAsync(player.UserId, thumbType, thumbSize)
-            controller.playerPhoto.Image = content
+            controller.playerPhoto.Image = playerImages.Imagem(player)
             local cpf = player:FindFirstChild("playerdata"):FindFirstChild("cpf")
             controller.playerCpf.Text = cpf.Value
         end
@@ -189,8 +192,6 @@ end)
 
 player.CharacterAdded:Connect(function(character)
 	local humanoid = character:WaitForChild("Humanoid")
-    task.wait(10)
-	LoadMinimap()
 	playerCamera(character)
 	LifeBar()
 
