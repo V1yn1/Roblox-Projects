@@ -41,4 +41,18 @@ module.LoadTypes = function()
         end
     end
 end
+-- only callable via server
+module.GiveGun = function(player:Player,gunName:string)
+    local char = player.Character
+    local backpack = player.Backpack
+    local tools = game:GetService("ServerStorage"):WaitForChild("guns")
+    local gun = tools:FindFirstChild(gunName)
+
+    if not gun then return end
+    local gunObject = gun:Clone()
+    gunObject.Parent = backpack
+    local ammo = Instance.new("NumberValue",gunObject)
+    ammo.Name  = "ammo"
+    ammo.Value = module.Guns[gunObject:GetAttribute("gunType")][gunName].ammo
+end
 return module

@@ -26,6 +26,12 @@ local function warmupTrack(track: AnimationTrack)
 	end)
 end
 
+local function TickLight()
+    shotLight.Enabled = true
+    task.wait(.1)
+    shotLight.Enabled = false
+end
+
 local function loadGunAnimations(animator: Animator, gun: Tool)
 	if LoadedGunTracks[gun] then
 		return LoadedGunTracks[gun]
@@ -89,20 +95,15 @@ player.CharacterAdded:Connect(function(char)
             local aim = gun:WaitForChild("Anims"):WaitForChild("aim")
             sounds = gun:WaitForChild("Handle"):WaitForChild("gunsSounds")
 
-            local equipAnim  = animator:GetTrackByAnimationId(equip.AnimationId)
-                or animator:LoadAnimation(equip)
-            local postureAnim = animator:GetTrackByAnimationId(posture.AnimationId)
-                or animator:LoadAnimation(posture)
-            local aimUpAnim = animator:GetTrackByAnimationId(aimUp.AnimationId)
-                or animator:LoadAnimation(aimUp)
-            local aimAnim = animator:GetTrackByAnimationId(aim.AnimationId)
-                or animator:LoadAnimation(aim)
+           
 
             local currentEquipToken = 0
 
             gun.Equipped:Connect(function()
-                if gun:FindFirstChild("Muzzle"):FindFirstChild("PointLight") then
-                    shotLight = gun.Muzzle.PointLight
+                if gun:FindFirstChild("Muzzle") then
+                    if gun:FindFirstChild("Muzzle"):FindFirstChild("PointLight") then
+                        shotLight = gun.Muzzle.PointLight
+                    end
                 end
                 currentEquipToken += 1
                 local myToken = currentEquipToken
@@ -113,7 +114,7 @@ player.CharacterAdded:Connect(function(char)
                 mode = gunStats["Guns"][gun:GetAttribute("gunType")][gun.Name].mode
                 cooldown = gunStats["Guns"][gun:GetAttribute("gunType")][gun.Name].rate
 
-                canAim.Value = true
+
                 currentGunEquiped = gun
 
                 local equipSound = sounds:FindFirstChild("GunEquip")
@@ -146,13 +147,15 @@ player.CharacterAdded:Connect(function(char)
                     end
 
                     startPosture()
+                    
                 end)
-
+                
                 -- Fallback caso Length ainda venha 0 ou a track não dispare como esperado
                 task.delay(math.max(tracks.equip.Length, 0.4), function()
-                    startPosture()
+                   startPosture()
                 end)
-
+                task.wait(.9)
+                canAim.Value = true
                 aimConnection = mouse.Button2Down:Connect(function()
                     if currentGunEquiped ~= gun then return end
 
@@ -169,6 +172,15 @@ player.CharacterAdded:Connect(function(char)
 
                 mouseConnection = mouse.Button1Down:Connect(function()
                     canFire = true
+                    if mode == "semi" then
+                       sounds = currentGunEquiped:WaitForChild("Handle"):WaitForChild("gunsSounds")
+                        local shootSound = sounds:FindFirstChild("GunShot")
+
+                        if shootSound then
+                            shootSound:Play()
+                        end
+                        task.spawn(TickLight)
+                    end
                 end)
 
                 mouseUpConnection = mouse.Button1Up:Connect(function()
@@ -217,11 +229,7 @@ player.CharacterAdded:Connect(function(char)
         end
     end
     local lastFireTime = 0
-    local function TickLight()
-        shotLight.Enabled = true
-        task.wait(.1)
-        shotLight.Enabled = false
-    end
+   
     RunService.Heartbeat:Connect(function()
         if not canFire then return end
         if not aiming.Value then return end
@@ -236,15 +244,14 @@ player.CharacterAdded:Connect(function(char)
         lastFireTime = now
 
         -- Aqui você executa sua ação de disparo/efeito visual
-        if currentGunEquiped:FindFirstChild("shell") then
-            sounds = currentGunEquiped:WaitForChild("Handle"):WaitForChild("gunsSounds")
-            local shootSound = sounds:FindFirstChild("GunShot")
-            
-            if shootSound then
-                shootSound:Play()
-            end
-            task.spawn(TickLight)
+        sounds = currentGunEquiped:WaitForChild("Handle"):WaitForChild("gunsSounds")
+        local shootSound = sounds:FindFirstChild("GunShot")
+
+        if shootSound then
+            shootSound:Play()
         end
+        task.spawn(TickLight)
+
     end)
 end)
 
