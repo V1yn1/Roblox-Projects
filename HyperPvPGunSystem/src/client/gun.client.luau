@@ -28,7 +28,7 @@ end
 
 local function TickLight()
     shotLight.Enabled = true
-    task.wait(.1)
+    task.wait(.15)
     shotLight.Enabled = false
 end
 
@@ -89,16 +89,13 @@ player.CharacterAdded:Connect(function(char)
     local animator = char:WaitForChild("Humanoid"):WaitForChild("Animator")
     for i,gun:Tool in pairs(player.Backpack:GetChildren()) do
         if gun:IsA("Tool") and gun:GetAttribute("gunType") ~= nil then
-            local equip = gun:WaitForChild("Anims"):WaitForChild("equip")
-            local posture = gun:WaitForChild("Anims"):WaitForChild("posture")
-            local aimUp = gun:WaitForChild("Anims"):WaitForChild("aimup")
-            local aim = gun:WaitForChild("Anims"):WaitForChild("aim")
             sounds = gun:WaitForChild("Handle"):WaitForChild("gunsSounds")
 
-           
+            gun:WaitForChild("Events"):WaitForChild("GetPosition").OnClientInvoke = function()
+                return (mouse.Hit.Position - gun:FindFirstChild("Muzzle").Position).Unit
+            end
 
             local currentEquipToken = 0
-
             gun.Equipped:Connect(function()
                 if gun:FindFirstChild("Muzzle") then
                     if gun:FindFirstChild("Muzzle"):FindFirstChild("PointLight") then
@@ -170,16 +167,21 @@ player.CharacterAdded:Connect(function(char)
                     tracks.posture:Play(0.1, 1, 1)
                 end)
 
+                local shotEvent = gun:FindFirstChild("Events"):FindFirstChild("Shoot")
+
                 mouseConnection = mouse.Button1Down:Connect(function()
                     canFire = true
-                    if mode == "semi" then
-                       sounds = currentGunEquiped:WaitForChild("Handle"):WaitForChild("gunsSounds")
-                        local shootSound = sounds:FindFirstChild("GunShot")
+                    if aiming.Value then
+                        if mode == "semi"  then
+                        sounds = currentGunEquiped:WaitForChild("Handle"):WaitForChild("gunsSounds")
+                            local shootSound = sounds:FindFirstChild("GunShot")
 
-                        if shootSound then
-                            shootSound:Play()
+                            if shootSound then
+                                shootSound:Play()
+                            end
+                            task.spawn(TickLight)
                         end
-                        task.spawn(TickLight)
+                        shotEvent:FireServer(mode)
                     end
                 end)
 
@@ -229,7 +231,7 @@ player.CharacterAdded:Connect(function(char)
         end
     end
     local lastFireTime = 0
-   
+
     RunService.Heartbeat:Connect(function()
         if not canFire then return end
         if not aiming.Value then return end

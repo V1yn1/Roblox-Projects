@@ -1,14 +1,16 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerStorage = game:GetService("ServerStorage")
+local ServerScriptService = game:GetService("ServerScriptService")
 
 local guns = ServerStorage:WaitForChild("guns")
-local gunStats = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("defaultGunsStats"))
+local gunFuncs = require(ServerScriptService:WaitForChild("Server"):WaitForChild("gunFunctions"))
 
-gunStats.LoadTypes()
+gunFuncs.LoadTypes()
 
 game.Players.PlayerAdded:Connect(function(player)
-    player.CharacterAdded:Wait()
-    gunStats.GiveGun(player,"M4A1")
-    gunStats.GiveGun(player,"Glock 22")
+    player.CharacterAdded:Connect(function()
+        gunFuncs.GiveGun(player,"M4A1")
+        gunFuncs.GiveGun(player,"Glock 22")
+    end)
 end)
 

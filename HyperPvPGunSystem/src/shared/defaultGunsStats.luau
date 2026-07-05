@@ -1,4 +1,4 @@
-local ServerStorage = game:GetService("ServerStorage")
+
 local module = {
     Guns = {
         AssaultRifles = {
@@ -31,28 +31,5 @@ local module = {
         }
     }
 }
-module.LoadTypes = function()
-    for type,guntable in module.Guns do
-        for gun,properties in guntable do 
-            local tool = ServerStorage:WaitForChild("guns"):WaitForChild(tostring(gun))
-            if tool then
-                tool:SetAttribute("gunType",tostring(type))
-            end
-        end
-    end
-end
--- only callable via server
-module.GiveGun = function(player:Player,gunName:string)
-    local char = player.Character
-    local backpack = player.Backpack
-    local tools = game:GetService("ServerStorage"):WaitForChild("guns")
-    local gun = tools:FindFirstChild(gunName)
 
-    if not gun then return end
-    local gunObject = gun:Clone()
-    gunObject.Parent = backpack
-    local ammo = Instance.new("NumberValue",gunObject)
-    ammo.Name  = "ammo"
-    ammo.Value = module.Guns[gunObject:GetAttribute("gunType")][gunName].ammo
-end
 return module
