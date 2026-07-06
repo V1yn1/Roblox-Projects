@@ -1,6 +1,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerStorage = game:GetService("ServerStorage")
 local module = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("defaultGunsStats"))
+local confete = ReplicatedStorage:WaitForChild("confete"):WaitForChild("confete")
 local funcs = {}
 
 funcs.LoadTypes = function()
@@ -30,6 +31,8 @@ funcs.GiveGun = function(player:Player,gunName:string)
     shootEvent.Name = "Shoot"
     local getPosRF = Instance.new("RemoteFunction",events)
     getPosRF.Name = "GetPosition"
+    local reloadEvent = Instance.new("RemoteEvent",events)
+    reloadEvent.Name = "Reload"
 
     local ammo = Instance.new("NumberValue",gunObject)
     ammo.Name  = "ammo"
@@ -43,6 +46,10 @@ funcs.GiveGun = function(player:Player,gunName:string)
     end)
     gunObject.Deactivated:Connect(function()
         autoFire = false
+    end)
+    gunObject:WaitForChild("Events"):WaitForChild("Reload").OnServerEvent:Connect(function(player)
+        ammo.Value = module.Guns[gunObject:GetAttribute("gunType")][gunName].ammo
+        print(player.Name.." reloaded "..gunName.." with "..ammo.Value.." ammo.")
     end)
     gunObject:WaitForChild("Events"):WaitForChild("Shoot").OnServerEvent:Connect(function(player, action)
         local params = RaycastParams.new()
@@ -66,6 +73,22 @@ funcs.GiveGun = function(player:Player,gunName:string)
                         local humanoid = hitPart.Parent:FindFirstChildOfClass("Humanoid")
                         if humanoid then
                             if hitPart == humanoid.Parent:FindFirstChild("Head") then
+                                if not humanoid.Parent:FindFirstChild("Head"):FindFirstChild("confete") then
+                                    local confeteInstance = confete:Clone()
+                                    for i,v in pairs(confeteInstance:GetChildren()) do
+                                        v.Parent = humanoid.Parent:FindFirstChild("Head")
+                                        v.Name = "confete"
+                                    end
+                                    confeteInstance:Destroy()
+                                end
+                                for i,v in pairs(humanoid.Parent:FindFirstChild("Head"):GetChildren()) do
+                                    if v:IsA("ParticleEmitter") then
+                                        v.Enabled = true
+                                        task.delay(1, function()
+                                            v.Enabled = false
+                                        end)
+                                    end
+                                end
                                 humanoid:TakeDamage(module.Guns[gunObject:GetAttribute("gunType")][gunName].headDmg)
                             else
                                 humanoid:TakeDamage(module.Guns[gunObject:GetAttribute("gunType")][gunName].dmg)

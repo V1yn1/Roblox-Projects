@@ -17,7 +17,7 @@ local runTrack
 
 local sprinting = false
 local NORMAL_SPEED = 7
-local SPRINT_SPEED = 16
+local SPRINT_SPEED = 26
 
 local function UpdateRunAnimation()
 	if not humanoid or not runTrack then
@@ -65,13 +65,17 @@ player:FindFirstChild("canAim").Changed:Connect(function()
        lastValue = true
     end
 end)
+
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	if input.KeyCode == Enum.KeyCode.LeftShift and not player:FindFirstChild("aiming").Value then
 		sprinting = true
 		humanoid.WalkSpeed = SPRINT_SPEED
 		UpdateRunAnimation()
         lastValue = player:FindFirstChild("canAim").Value
-        player:FindFirstChild("canAim").Value = false
+        while sprinting do
+            player:FindFirstChild("canAim").Value = false
+            task.wait()
+        end
 	end
 end)
 

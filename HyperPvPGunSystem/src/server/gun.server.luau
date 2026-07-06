@@ -12,7 +12,6 @@ game.Players.PlayerAdded:Connect(function(player)
         task.wait(2)
         gunFuncs.GiveGun(player,"Glock 19")
         gunFuncs.GiveGun(player,"G36")
-        gunFuncs.GiveGun(player,"M4A1")
     end)
 end)
 

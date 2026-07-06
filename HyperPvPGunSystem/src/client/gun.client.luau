@@ -6,10 +6,12 @@ local player = game.Players.LocalPlayer
 local canAim = player:WaitForChild("canAim")
 local aiming = player:WaitForChild("aiming")
 local mouse = player:GetMouse()
-local aimConnection,releaseConnection,mouseConnection,mouseUpConnection
+local aimConnection,releaseConnection,mouseConnection,mouseUpConnection,reloadConnection
 local canFire = false
 local cooldown = 1
 local mode, currentGunEquiped,sounds,shotLight
+
+
 
 local ContentProvider = game:GetService("ContentProvider")
 local TweenService = game:GetService("TweenService")
@@ -138,9 +140,15 @@ player.CharacterAdded:Connect(function(char)
                 GenerateBulletPart(origin, direction, distance)
                 return (mouse.Hit.Position - gun:FindFirstChild("shoot").WorldPosition).Unit
             end
-
+            local gui = player:WaitForChild("PlayerGui"):WaitForChild("gunSystem")
+            local guninfo = gui:WaitForChild("gunInfo")
+            local gunimage = guninfo:WaitForChild("gunImage")
+            local ammotext = guninfo:WaitForChild("ammo")
             local currentEquipToken = 0
             gun.Equipped:Connect(function()
+                gunimage.Image = "rbxassetid://" ..gunStats["Guns"][gun:GetAttribute("gunType")][gun.Name].image
+                ammotext.Text = gun:FindFirstChild("ammo").Value.."/"..gunStats["Guns"][gun:GetAttribute("gunType")][gun.Name].ammo
+                guninfo.Visible = true
                 if gun:FindFirstChild("Muzzle") then
                     if gun:FindFirstChild("Muzzle"):FindFirstChild("PointLight") then
                         shotLight = gun.Muzzle.PointLight
@@ -261,6 +269,7 @@ player.CharacterAdded:Connect(function(char)
                 end)
             end)
            gun.Unequipped:Connect(function()
+                guninfo.Visible = false
                 currentEquipToken += 1
 
                 canAim.Value = false
@@ -300,13 +309,18 @@ player.CharacterAdded:Connect(function(char)
                 end
             end)
         end
+       
         gun:FindFirstChild("ammo").Changed:Connect(function()
+            local gui = player:WaitForChild("PlayerGui"):WaitForChild("gunSystem")
+            local guninfo = gui:WaitForChild("gunInfo")
+            local ammotext = guninfo:WaitForChild("ammo")
             if gun:FindFirstChild("ammo").Value <= 0 then
                 sounds:WaitForChild("Tick"):Play()
                 LoadedGunTracks[gun].shoot:Stop()
             else
                 task.spawn(TickLight)
             end
+            ammotext.Text = gun:FindFirstChild("ammo").Value.."/"..gunStats["Guns"][gun:GetAttribute("gunType")][gun.Name].ammo
         end)
     end
     player.Backpack.ChildAdded:Connect(function(gun: Tool)

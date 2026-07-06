@@ -8,7 +8,7 @@ local module = {
                 ammo = 25,
                 dmg = 20,
                 headDmg = 50,
-                image = "rbxassetid://16600641613"
+                image = 16600641613
             },
             ["G36"] = {
                 mode = "auto",
@@ -16,7 +16,7 @@ local module = {
                 ammo = 30,
                 dmg = 20,
                 headDmg = 100,
-                image = "rbxassetid://16600641613"
+                image = 16600641613
             }
         },
         Pistols = {
@@ -26,7 +26,7 @@ local module = {
                 ammo = 15,
                 dmg = 15,
                 headDmg = 100,
-                image = "rbxassetid://105540078"
+                image = 105540078
             },
             ["Glock 19"] = {
                 mode = "semi",
@@ -34,7 +34,7 @@ local module = {
                 ammo = 33,
                 dmg = 15,
                 headDmg = 100,
-                image = "rbxassetid://105540078"
+                image = 105540078
             }
         }
     }
