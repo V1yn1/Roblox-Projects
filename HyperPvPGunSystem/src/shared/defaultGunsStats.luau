@@ -27,6 +27,14 @@ local module = {
                 dmg = 15,
                 headDmg = 100,
                 image = "rbxassetid://105540078"
+            },
+            ["Glock 19"] = {
+                mode = "semi",
+                rate = .5,
+                ammo = 33,
+                dmg = 15,
+                headDmg = 100,
+                image = "rbxassetid://105540078"
             }
         }
     }
