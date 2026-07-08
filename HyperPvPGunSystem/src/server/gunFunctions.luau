@@ -15,7 +15,26 @@ funcs.LoadTypes = function()
     end
 end
 -- only callable via server
-funcs.GiveGun = function(player:Player,gunName:string)
+type weaponProperties = {
+    mode : string,
+    rate : number,
+    ammo : number,
+    dmg : number,
+    headDmg : number,
+    image : number
+}
+type animations = {
+    posture : number,
+    aimup : number,
+    aim : number,
+    shoot : number,
+    reload : number,
+    equip : number,
+}
+
+
+
+funcs.GiveGun = function(player:Player,gunName:string,gunType:"AssaultRifles | Pistols", properties:weaponProperties, animations:animations)
     local char = player.Character
     local backpack = player.Backpack
     local tools = game:GetService("ServerStorage"):WaitForChild("guns")
@@ -23,7 +42,21 @@ funcs.GiveGun = function(player:Player,gunName:string)
     local autoFire = false
 
     if not gun then return warn("Gun not found!") end
+    if not (gun:FindFirstChild("Mag") and gun:FindFirstChild("Muzzle") and gun:FindFirstChild("shoot")) then return warn("Gun is missing Parts") end
+    if properties and gunType then
+        if not module.Guns[gunType] then return warn("Invalid gunType, please select between the avaliables ones in defaultGunsStats") end
+        module.Guns[gunType][gunName] = properties
+        gun:SetAttribute("gunType",gunType)
+        local RE = Instance.new("RemoteEvent",ReplicatedStorage:WaitForChild("Shared"):WaitForChild("defaultGunsStats"))
+        task.delay(.5,function()
+            RE:FireClient(player,properties)
+            task.wait(.5)
+            RE:Destroy()
+        end)
+    end
+
     local gunObject = gun:Clone()
+
     gunObject.Parent = backpack
     local events = Instance.new("Folder",gunObject)
     events.Name = "Events"
@@ -33,23 +66,40 @@ funcs.GiveGun = function(player:Player,gunName:string)
     getPosRF.Name = "GetPosition"
     local reloadEvent = Instance.new("RemoteEvent",events)
     reloadEvent.Name = "Reload"
-
+    
     local ammo = Instance.new("NumberValue",gunObject)
     ammo.Name  = "ammo"
-    ammo.Value = module.Guns[gunObject:GetAttribute("gunType")][gunName].ammo
+    ammo.Value = module.Guns[gunObject:GetAttribute("gunType")][gunName].ammo or properties.ammo
 
     local sounds = gunObject:WaitForChild("Handle"):WaitForChild("gunsSounds")
     local shootSound = sounds:WaitForChild("GunShot")
-    
+
+    if not gunObject:FindFirstChild("Anims") then
+        local Anims = Instance.new("Folder",gunObject)
+        Anims.Name = "Anims"
+        for i,v in pairs(animations) do
+            local animTrack = Instance.new("Animation",Anims)
+            animTrack.Name = i
+            animTrack.AnimationId = "rbxassetid://"..v
+        end
+    end
+
     gunObject.Activated:Connect(function()
        autoFire = true
     end)
     gunObject.Deactivated:Connect(function()
         autoFire = false
     end)
+    local function reloadgun()
+        autoFire = false
+        task.delay(2.5, function()
+            ammo.Value = module.Guns[gunObject:GetAttribute("gunType")][gunName].ammo
+        end)
+    end
     gunObject:WaitForChild("Events"):WaitForChild("Reload").OnServerEvent:Connect(function(player)
-        ammo.Value = module.Guns[gunObject:GetAttribute("gunType")][gunName].ammo
-        print(player.Name.." reloaded "..gunName.." with "..ammo.Value.." ammo.")
+        if ammo.Value < module.Guns[gunObject:GetAttribute("gunType")][gunName].ammo then
+            reloadgun()
+        end
     end)
     gunObject:WaitForChild("Events"):WaitForChild("Shoot").OnServerEvent:Connect(function(player, action)
         local params = RaycastParams.new()
@@ -70,9 +120,10 @@ funcs.GiveGun = function(player:Player,gunName:string)
                         local hitNormal = result.Normal
 
                     if hitPart and hitPart.Parent then
-                        local humanoid = hitPart.Parent:FindFirstChildOfClass("Humanoid")
+                        local humanoid = hitPart.Parent:FindFirstChildOfClass("Humanoid") or hitPart.Parent.Parent:FindFirstChildOfClass("Humanoid")
                         if humanoid then
-                            if hitPart == humanoid.Parent:FindFirstChild("Head") then
+                            print(hitPart.Name)
+                            if hitPart == humanoid.Parent:FindFirstChild("Head") or hitPart:FindFirstChild("HatAttachment") or hitPart:FindFirstChild("FaceCenterAttachment") or hitPart:FindFirstChild("HairAttachment") then
                                 if not humanoid.Parent:FindFirstChild("Head"):FindFirstChild("confete") then
                                     local confeteInstance = confete:Clone()
                                     for i,v in pairs(confeteInstance:GetChildren()) do
