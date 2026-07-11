@@ -45,7 +45,7 @@ local function setupCharacter(character)
 			break
 		end
 
-		task.wait(0.1)
+		task.wait(1)
 	end
 
 	if not waist then

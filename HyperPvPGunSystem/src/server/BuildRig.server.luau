@@ -46,6 +46,18 @@ end
 local function setupCharacter(character)
 	local humanoid = character:WaitForChild("Humanoid", 10)
 	if not humanoid then return end
+	local CurrentDescription = humanoid:GetAppliedDescription()
+
+    CurrentDescription.Head = 0
+    CurrentDescription.Torso = 0
+    CurrentDescription.LeftArm = 0
+    CurrentDescription.RightArm = 0
+    CurrentDescription.LeftLeg = 0
+    CurrentDescription.RightLeg = 0
+
+    humanoid:ApplyDescription(CurrentDescription)
+
+	task.wait(.5)
 
 	local lowerTorso = character:WaitForChild("LowerTorso", 10)
 	local upperTorso = character:WaitForChild("UpperTorso", 10)
@@ -73,6 +85,8 @@ local function setupCharacter(character)
 		neck = createMotor("Neck", upperTorso, head)
 		print("Motor6D Neck criado manualmente")
 	end
+
+   
 end
 
 Players.PlayerAdded:Connect(function(player)

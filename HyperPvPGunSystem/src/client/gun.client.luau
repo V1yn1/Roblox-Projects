@@ -76,12 +76,12 @@ local function loadGunAnimations(animator: Animator, gun: Tool)
         reload = animator:GetTrackByAnimationId(reload.AnimationId) or animator:LoadAnimation(reload),
 	}
 
-	tracks.equip.Priority = Enum.AnimationPriority.Action
-	tracks.posture.Priority = Enum.AnimationPriority.Action
-	tracks.aimUp.Priority = Enum.AnimationPriority.Action
-	tracks.aim.Priority = Enum.AnimationPriority.Action
-	tracks.shoot.Priority = Enum.AnimationPriority.Action
-	tracks.reload.Priority = Enum.AnimationPriority.Action2
+	tracks.equip.Priority = Enum.AnimationPriority.Action2
+	tracks.posture.Priority = Enum.AnimationPriority.Action2
+	tracks.aimUp.Priority = Enum.AnimationPriority.Action2
+	tracks.aim.Priority = Enum.AnimationPriority.Action2
+	tracks.shoot.Priority = Enum.AnimationPriority.Action4
+	tracks.reload.Priority = Enum.AnimationPriority.Action3
 
 	tracks.posture.Looped = true
 	tracks.aim.Looped = true
@@ -119,7 +119,7 @@ local function GenerateBulletPart(origin, direction, distance)
 end
 
 local function TryPushGunData (gun)
-    local child = ReplicatedStorage:WaitForChild("Shared"):WaitForChild("defaultGunsStats"):WaitForChild("RemoteEvent")
+    local child = player:WaitForChild("infos")
     if child and child:IsA("RemoteEvent") then
         child.OnClientEvent:Connect(function(properties)
             gunStats["Guns"][gun:GetAttribute("gunType")][gun.Name] = properties
@@ -158,10 +158,14 @@ player.CharacterAdded:Connect(function(char)
             local gui = player:WaitForChild("PlayerGui"):WaitForChild("gunSystem")
             local guninfo = gui:WaitForChild("gunInfo")
             local gunimage = guninfo:WaitForChild("gunImage")
+            local gunimageShadow = guninfo:WaitForChild("gunImageshadow")
             local ammotext = guninfo:WaitForChild("ammo")
             local currentEquipToken = 0
+           
+            local tracks = loadGunAnimations(animator, gun)
             gun.Equipped:Connect(function()
                 gunimage.Image = "rbxassetid://" ..gunStats["Guns"][gun:GetAttribute("gunType")][gun.Name].image
+                gunimageShadow.Image = "rbxassetid://" ..gunStats["Guns"][gun:GetAttribute("gunType")][gun.Name].image
                 ammotext.Text = gun:FindFirstChild("ammo").Value.."/"..gunStats["Guns"][gun:GetAttribute("gunType")][gun.Name].ammo
                 guninfo.Visible = true
                 if gun:FindFirstChild("Muzzle") then
@@ -171,8 +175,7 @@ player.CharacterAdded:Connect(function(char)
                 end
                 currentEquipToken += 1
                 local myToken = currentEquipToken
-
-                local tracks = loadGunAnimations(animator, gun)
+                tracks = loadGunAnimations(animator, gun)
                 sounds = gun:WaitForChild("Handle"):WaitForChild("gunsSounds")
 
                 mode = gunStats["Guns"][gun:GetAttribute("gunType")][gun.Name].mode
@@ -185,7 +188,7 @@ player.CharacterAdded:Connect(function(char)
                 if equipSound then
                     equipSound:Play()
                 end
-
+                RunService.Heartbeat:Wait()
                 tracks.posture:Stop(0)
                 tracks.aim:Stop(0)
                 tracks.aimUp:Stop(0)
@@ -220,30 +223,45 @@ player.CharacterAdded:Connect(function(char)
                 end)
                 task.wait(.9)
                 canAim.Value = true
+                local aimEvent:RemoteEvent =  gun:FindFirstChild("Events"):WaitForChild("Aiming")
                 if aimConnection then
                     aimConnection:Disconnect()
                     aimConnection = nil
                 end
+                local debounce = false
                 aimConnection = mouse.Button2Down:Connect(function()
-                   
-                    if currentGunEquiped ~= gun then return end
+                    if currentGunEquiped ~= gun  or debounce then return end
                     if not canAim.Value then return end
+                    debounce = true
                     tracks.posture:Stop(0.1)
                     tracks.aim:Play(0.1, 1, 1)
                     sounds:WaitForChild("AimUp"):Play()
+                    task.delay(.1,function()
+                        aimEvent:FireServer(aiming.Value)
+                        print("Sent")
+                    end)
+                    task.wait(.1)
+                    debounce = false
                 end)
                 if releaseConnection then
                     releaseConnection:Disconnect()
                     releaseConnection = nil
                 end
+                local debounceRelease = false
                 releaseConnection = mouse.Button2Up:Connect(function()
-                    if currentGunEquiped ~= gun then return end
-                    
+                    if currentGunEquiped ~= gun or debounceRelease then return end
+                    debounceRelease = true
                     tracks.aim:Stop(0.1)
+                    tracks.shoot:Stop(0.1)
                     tracks.posture:Play(0.1, 1, 1)
                     if canAim.Value then
                         sounds:WaitForChild("AimDown"):Play()
+                        task.delay(.1,function()
+                            aimEvent:FireServer(aiming.Value)
+                        end)
                     end
+                    task.wait(.1)
+                    debounceRelease = false
                 end)
 
                 local shotEvent = gun:FindFirstChild("Events"):FindFirstChild("Shoot")
@@ -260,11 +278,12 @@ player.CharacterAdded:Connect(function(char)
                             tracks.shoot.Looped = false
                             LoadedGunTracks[currentGunEquiped].shoot:Play(0.1, 1, 1)
                             task.spawn(TickLight)
+                            shotEvent:FireServer(mode)
                         end
-                        shotEvent:FireServer(mode)
                         if mode == "auto" and currentGunEquiped:FindFirstChild("ammo") and currentGunEquiped:FindFirstChild("ammo").Value > 0 then
                             tracks.shoot.Looped = true
                             LoadedGunTracks[currentGunEquiped].shoot:Play()
+                            shotEvent:FireServer(mode)
                         end
                         if currentGunEquiped:FindFirstChild("ammo") and currentGunEquiped:FindFirstChild("ammo").Value <= 0 then
                             sounds:WaitForChild("Tick"):Play()
@@ -317,9 +336,10 @@ player.CharacterAdded:Connect(function(char)
                                         end
                                     end
                                 end
+                                currentGunEquiped:FindFirstChild("Mag").Transparency = 1
                             end
                             currentGunEquiped.Events.Reload:FireServer()
-                            task.delay(2.5, function()
+                            task.delay(LoadedGunTracks[currentGunEquiped].reload.Length, function()
                                 LoadedGunTracks[currentGunEquiped].posture.Looped = true
                                 LoadedGunTracks[currentGunEquiped].aim.Looped = true
                                 LoadedGunTracks[currentGunEquiped].posture:Play()
@@ -329,6 +349,7 @@ player.CharacterAdded:Connect(function(char)
                                 if newMag then
                                     newMag:Destroy()
                                 end
+                                currentGunEquiped:FindFirstChild("Mag").Transparency = 0
                             end)
                            
                         end
@@ -353,6 +374,7 @@ player.CharacterAdded:Connect(function(char)
                     tracks.posture:Stop(0.1)
                     tracks.aim:Stop(0.1)
                     tracks.aimUp:Stop(0.1)
+                    tracks.shoot:Stop(0.1)
                 end
 
                 if aimConnection then

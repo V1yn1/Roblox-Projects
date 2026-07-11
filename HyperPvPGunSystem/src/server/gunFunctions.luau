@@ -31,23 +31,32 @@ type animations = {
     reload : number,
     equip : number,
 }
+type sounds = {
+    GunShot : number,
+    AimUp : number,
+    AimDown : number,
+    Tick : number,
+    Reload : number,
+    GunEquip : number,
+
+}
 
 
-
-funcs.GiveGun = function(player:Player,gunName:string,gunType:"AssaultRifles | Pistols", properties:weaponProperties, animations:animations)
+funcs.GiveGun = function(player:Player,gunName:string,gunType:"AssaultRifles | Pistols", properties:weaponProperties, animations:animations, sounds:sounds)
     local char = player.Character
     local backpack = player.Backpack
     local tools = game:GetService("ServerStorage"):WaitForChild("guns")
     local gun = tools:FindFirstChild(gunName)
     local autoFire = false
-
+    local aiming = Instance.new("BoolValue",player) aiming.Name = "aiming"
     if not gun then return warn("Gun not found!") end
     if not (gun:FindFirstChild("Mag") and gun:FindFirstChild("Muzzle") and gun:FindFirstChild("shoot")) then return warn("Gun is missing Parts") end
     if properties and gunType then
         if not module.Guns[gunType] then return warn("Invalid gunType, please select between the avaliables ones in defaultGunsStats") end
         module.Guns[gunType][gunName] = properties
         gun:SetAttribute("gunType",gunType)
-        local RE = Instance.new("RemoteEvent",ReplicatedStorage:WaitForChild("Shared"):WaitForChild("defaultGunsStats"))
+        local RE = Instance.new("RemoteEvent",player)
+        RE.Name = "infos"
         task.delay(.5,function()
             RE:FireClient(player,properties)
             task.wait(.5)
@@ -66,7 +75,8 @@ funcs.GiveGun = function(player:Player,gunName:string,gunType:"AssaultRifles | P
     getPosRF.Name = "GetPosition"
     local reloadEvent = Instance.new("RemoteEvent",events)
     reloadEvent.Name = "Reload"
-    
+    local aimingEvent = Instance.new("RemoteEvent",events)
+    aimingEvent.Name = "Aiming"
     local ammo = Instance.new("NumberValue",gunObject)
     ammo.Name  = "ammo"
     ammo.Value = module.Guns[gunObject:GetAttribute("gunType")][gunName].ammo or properties.ammo
@@ -83,9 +93,17 @@ funcs.GiveGun = function(player:Player,gunName:string,gunType:"AssaultRifles | P
             animTrack.AnimationId = "rbxassetid://"..v
         end
     end
-
+    aimingEvent.OnServerEvent:Connect(function(player,state:boolean)
+            aiming.Value = state
+            if state == false then
+                autoFire = false
+            end
+            print("recieved" .. tostring(aiming.Value))
+    end)
     gunObject.Activated:Connect(function()
-       autoFire = true
+        if aiming.Value then
+            autoFire = true
+        end
     end)
     gunObject.Deactivated:Connect(function()
         autoFire = false
@@ -158,8 +176,8 @@ funcs.GiveGun = function(player:Player,gunName:string,gunType:"AssaultRifles | P
         end
 
         if action == "auto" then
-            while autoFire do
-                if gunObject.Parent ~= char or not autoFire then
+            while autoFire and  aiming.Value do
+                if gunObject.Parent ~= char or not autoFire or not aiming.Value then
                     break
                 end
 
@@ -180,6 +198,8 @@ funcs.GiveGun = function(player:Player,gunName:string,gunType:"AssaultRifles | P
                 print(player.Name.." tried to fire "..gunName.." but is out of ammo.")
             end
         end
+
     end)
+    return gunObject
 end
 return funcs
