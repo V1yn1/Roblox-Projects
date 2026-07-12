@@ -6,7 +6,7 @@ local player = game.Players.LocalPlayer
 local canAim = player:WaitForChild("canAim")
 local aiming = player:WaitForChild("aiming")
 local mouse = player:GetMouse()
-local aimConnection,releaseConnection,mouseConnection,mouseUpConnection,reloadConnection
+local aimConnection,releaseConnection,mouseConnection,mouseUpConnection,reloadConnection,magdropConnection
 local canFire = false
 local cooldown = 1
 local mode, currentGunEquiped,sounds,shotLight
@@ -336,9 +336,20 @@ player.CharacterAdded:Connect(function(char)
                                         end
                                     end
                                 end
-                                currentGunEquiped:FindFirstChild("Mag").Transparency = 1
+                                newMag.Transparency = 1
+                                currentGunEquiped:FindFirstChild("Mag").Transparency = 0
                             end
                             currentGunEquiped.Events.Reload:FireServer()
+                            if magdropConnection then
+                                magdropConnection:Disconnect()
+                            end
+                            magdropConnection = tracks.reload:GetMarkerReachedSignal("FakeMag"):Connect(function()
+                                currentGunEquiped:FindFirstChild("Mag").Transparency = 1
+                                newMag.Transparency = 0
+                                newMag.CFrame = currentGunEquiped.Mag.CFrame
+                                task.wait(.5)
+                                currentGunEquiped:FindFirstChild("Mag").Transparency = 0
+                            end)
                             task.delay(LoadedGunTracks[currentGunEquiped].reload.Length, function()
                                 LoadedGunTracks[currentGunEquiped].posture.Looped = true
                                 LoadedGunTracks[currentGunEquiped].aim.Looped = true
@@ -417,6 +428,7 @@ player.CharacterAdded:Connect(function(char)
             ammotext.Text = gun:FindFirstChild("ammo").Value.."/"..gunStats["Guns"][gun:GetAttribute("gunType")][gun.Name].ammo
         end)
     end
+   
     player.Backpack.ChildAdded:Connect(function(gun: Tool)
         initialize(gun)
     end)

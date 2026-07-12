@@ -39,9 +39,15 @@ local AIM_DISTANCE = 5
 local NORMAL_SHOULDER_OFFSET = 0
 local AIM_SHOULDER_OFFSET = 2
 
+local NORMAL_MINPITCH = -60
+local AIM_MINPITCH = -30
+
+local NORMAL_MAXPITCH = 40
+local AIM_MAXPITCH = 20
+
 local heightOffset = 2
 local minPitch = -60
-local maxPitch = 70
+local maxPitch = 40
 
 local smoothness = 0.15
 
@@ -161,7 +167,8 @@ local function playerCamera(character)
 				sensitivity = AIM_SENSITIVITY
 				currentDistance = AIM_DISTANCE
 				currentShoulderOffset = AIM_SHOULDER_OFFSET * shoulderSide
-
+				maxPitch = AIM_MAXPITCH
+				minPitch = AIM_MINPITCH
 				humanoid.AutoRotate = false
 			else
 				UserInputService.MouseIconEnabled = false
@@ -169,7 +176,8 @@ local function playerCamera(character)
 				sensitivity = NORMAL_SENSITIVITY
 				currentDistance = NORMAL_DISTANCE
 				currentShoulderOffset = NORMAL_SHOULDER_OFFSET
-
+				maxPitch = NORMAL_MAXPITCH
+				minPitch = NORMAL_MINPITCH
 				humanoid.AutoRotate = true
 			end
 
