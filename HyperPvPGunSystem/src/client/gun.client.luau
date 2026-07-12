@@ -161,7 +161,7 @@ player.CharacterAdded:Connect(function(char)
             local gunimageShadow = guninfo:WaitForChild("gunImageshadow")
             local ammotext = guninfo:WaitForChild("ammo")
             local currentEquipToken = 0
-           
+
             local tracks = loadGunAnimations(animator, gun)
             gun.Equipped:Connect(function()
                 gunimage.Image = "rbxassetid://" ..gunStats["Guns"][gun:GetAttribute("gunType")][gun.Name].image
@@ -274,7 +274,7 @@ player.CharacterAdded:Connect(function(char)
                     if aiming.Value then
                         if mode == "semi" and currentGunEquiped:FindFirstChild("ammo") and currentGunEquiped:FindFirstChild("ammo").Value > 0 then
                         sounds = currentGunEquiped:WaitForChild("Handle"):WaitForChild("gunsSounds")
-                           
+
                             tracks.shoot.Looped = false
                             LoadedGunTracks[currentGunEquiped].shoot:Play(0.1, 1, 1)
                             task.spawn(TickLight)
@@ -362,7 +362,7 @@ player.CharacterAdded:Connect(function(char)
                                 end
                                 currentGunEquiped:FindFirstChild("Mag").Transparency = 0
                             end)
-                           
+
                         end
                     end
                 end)
@@ -414,7 +414,7 @@ player.CharacterAdded:Connect(function(char)
                 end
             end)
         end
-       
+
         gun:FindFirstChild("ammo").Changed:Connect(function()
             local gui = player:WaitForChild("PlayerGui"):WaitForChild("gunSystem")
             local guninfo = gui:WaitForChild("gunInfo")
@@ -428,11 +428,11 @@ player.CharacterAdded:Connect(function(char)
             ammotext.Text = gun:FindFirstChild("ammo").Value.."/"..gunStats["Guns"][gun:GetAttribute("gunType")][gun.Name].ammo
         end)
     end
-   
+
     player.Backpack.ChildAdded:Connect(function(gun: Tool)
         initialize(gun)
     end)
-   
+
 end)
 
 
