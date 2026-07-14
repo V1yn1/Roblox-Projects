@@ -104,7 +104,6 @@ stamina.Changed:Connect(function()
 end)
 
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
-	if gameProcessed then return end
 	if input.KeyCode == Enum.KeyCode.LeftShift then
 		startSprint(input.UserInputState)
 	end

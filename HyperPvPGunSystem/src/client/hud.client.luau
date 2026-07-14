@@ -33,8 +33,9 @@ end
 local function SetBar(bar, fullSize, fraction)
     if not bar then return end
     fraction = math.clamp(fraction, 0, 1)
+    bar.Position = UDim2.new(.5,0,1,0)
     TweenService:Create(bar, TWEEN_INFO, {
-        Size = UDim2.new(fullSize.X.Scale * fraction, fullSize.X.Offset * fraction, fullSize.Y.Scale, fullSize.Y.Offset),
+        Size = UDim2.new(fullSize.X.Scale , fullSize.X.Offset * fraction, fullSize.Y.Scale* fraction, fullSize.Y.Offset),
     }):Play()
 end
 
