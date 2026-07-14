@@ -18,12 +18,8 @@ if not canAim then
 	canAim.Parent = player
 end
 
-local aiming = player:FindFirstChild("aiming")
-if not aiming then
-	aiming = Instance.new("BoolValue")
-	aiming.Name = "aiming"
-	aiming.Parent = player
-end
+local aiming = player:WaitForChild("aiming")
+
 
 canAim.Value = false
 aiming.Value = false

@@ -2,6 +2,11 @@ local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 
 local player = Players.LocalPlayer
+local runningEvent = player:WaitForChild("running")
+local stamina = player:WaitForChild("stamina")
+
+-- gun.client deriva o canAim a partir deste atributo; este script não escreve canAim
+player:SetAttribute("sprinting", false)
 
 -- Desativa os sons padrão do Roblox
 local characterSounds = player:WaitForChild("PlayerScripts"):FindFirstChild("RbxCharacterSounds")
@@ -9,7 +14,7 @@ if characterSounds then
 	characterSounds.Enabled = false
 end
 
-local runAnimation = Instance.new("Animation")
+local runAnimation = Instance.new("Animation",player)
 runAnimation.AnimationId = "rbxassetid://101129562298989"
 
 local humanoid
@@ -18,6 +23,7 @@ local runTrack
 local sprinting = false
 local NORMAL_SPEED = 7
 local SPRINT_SPEED = 26
+local MIN_STAMINA_TO_SPRINT = 5
 
 local function UpdateRunAnimation()
 	if not humanoid or not runTrack then
@@ -28,7 +34,7 @@ local function UpdateRunAnimation()
 
 	if sprinting and moving then
 		if not runTrack.IsPlaying then
-			runTrack:Play(0.15)
+			runTrack:Play()
 		end
 	else
 		if runTrack.IsPlaying then
@@ -37,7 +43,37 @@ local function UpdateRunAnimation()
 	end
 end
 
+local function stopSprint()
+	if not sprinting then return end
+	sprinting = false
+	if humanoid then
+		humanoid.WalkSpeed = NORMAL_SPEED
+	end
+	UpdateRunAnimation()
+	runningEvent:FireServer(Enum.UserInputState.End)
+	player:SetAttribute("sprinting", false)
+end
+
+local function startSprint(state)
+	if sprinting then return end
+	local aiming = player:FindFirstChild("aiming")
+	if aiming and aiming.Value then return end
+	if stamina.Value <= MIN_STAMINA_TO_SPRINT then return end
+
+	sprinting = true
+	if humanoid then
+		humanoid.WalkSpeed = SPRINT_SPEED
+	end
+	UpdateRunAnimation()
+	runningEvent:FireServer(state)
+	player:SetAttribute("sprinting", true)
+end
+
 local function SetupCharacter(character)
+	if sprinting then
+		stopSprint()
+	end
+
 	humanoid = character:WaitForChild("Humanoid")
 	local animator = humanoid:WaitForChild("Animator")
 
@@ -59,31 +95,23 @@ SetupCharacter(character)
 player.CharacterAdded:Connect(function(character)
 	SetupCharacter(character)
 end)
-local lastValue
-player:FindFirstChild("canAim").Changed:Connect(function()
-    if  player:FindFirstChild("canAim").Value  then
-       lastValue = true
-    end
+
+-- Sem stamina, o sprint acaba sozinho
+stamina.Changed:Connect(function()
+	if sprinting and stamina.Value <= 0 then
+		stopSprint()
+	end
 end)
 
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
-	if input.KeyCode == Enum.KeyCode.LeftShift and not player:FindFirstChild("aiming").Value then
-		sprinting = true
-		humanoid.WalkSpeed = SPRINT_SPEED
-		UpdateRunAnimation()
-        lastValue = player:FindFirstChild("canAim").Value
-        while sprinting do
-            player:FindFirstChild("canAim").Value = false
-            task.wait()
-        end
+	if gameProcessed then return end
+	if input.KeyCode == Enum.KeyCode.LeftShift then
+		startSprint(input.UserInputState)
 	end
 end)
 
 UserInputService.InputEnded:Connect(function(input)
 	if input.KeyCode == Enum.KeyCode.LeftShift then
-		sprinting = false
-		humanoid.WalkSpeed = NORMAL_SPEED
-		UpdateRunAnimation()
-        player:FindFirstChild("canAim").Value = lastValue
+		stopSprint()
 	end
 end)

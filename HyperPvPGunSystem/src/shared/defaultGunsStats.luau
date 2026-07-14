@@ -20,22 +20,7 @@ local module = {
             }
         },
         Pistols = {
-            ["Glock 22"] = {
-                mode = "semi",
-                rate = .3,
-                ammo = 15,
-                dmg = 15,
-                headDmg = 100,
-                image = 105540078
-            },
-            ["Glock 19"] = {
-                mode = "semi",
-                rate = .5,
-                ammo = 33,
-                dmg = 15,
-                headDmg = 100,
-                image = 105540078
-            }
+            
         }
     }
 }
