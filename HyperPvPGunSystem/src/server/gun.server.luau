@@ -35,7 +35,7 @@ local function giveGuns(player)
         GunEquip = 137595180744957,
     }
 )
-    local g22 = gunFuncs.GiveGun(player,"Glock 22","Pistols",
+    --[[local g22 = gunFuncs.GiveGun(player,"Glock 22","Pistols",
     { -- properties
         mode = "auto",
         rate = .5,
@@ -91,7 +91,7 @@ local function giveGuns(player)
             Reload = 402318477,
             GunEquip = 7127178040,
         }
-    )
+    )]]--
 end
 
 local function onPlayerAdded(player)
