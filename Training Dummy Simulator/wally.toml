@@ -1,0 +1,8 @@
+[package]
+name = "vinic/training-dummy-simulator"
+version = "0.1.0"
+registry = "https://github.com/UpliftGames/wally-index"
+realm = "shared"
+
+[dependencies]
+Vanguard = "twrblxdevs/vanguard@0.1.14"
