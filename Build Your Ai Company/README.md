@@ -15,3 +15,16 @@ rojo serve
 ```
 
 For more help, check out [the Rojo documentation](https://rojo.space/docs).
+
+
+# Organização dos scripts por funcionalidade:
+
+Classes são presets de dados ex: player que possui estatisticas, carros e suas configurações.
+
+Model é responsavel por carregar todas as funções que mexem com o Repository.
+
+Repository é o cache responsavel por guardar as instancias das classes geradas.
+
+Services são responsáveis por executar toda a logica do lado do servidor.
+
+Controllers são responsáveis por receber os dados do servidor e mostrar para o cliente e/ou executar lógicas no cliente como: animações, efeitos especiais.
